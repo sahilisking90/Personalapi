@@ -1,180 +1,844 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — OSINT API Hub</title>
+  <title>Dashboard — OSINT Hub</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
-    body{background:#080c14;font-family:'Plus Jakarta Sans',sans-serif;color:#f3f4f6;}
-    .glass{background:rgba(17,24,39,0.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.06);}
-    .cs::-webkit-scrollbar{width:4px;height:4px;}.cs::-webkit-scrollbar-track{background:#080c14;}.cs::-webkit-scrollbar-thumb{background:#1f2937;border-radius:4px;}
+    :root {
+      --bg:      #050810;
+      --surface: #090e1c;
+      --panel:   #0d1426;
+      --border:  rgba(255,255,255,0.06);
+      --cyan:    #22d3ee;
+      --indigo:  #818cf8;
+      --emerald: #34d399;
+      --amber:   #fbbf24;
+      --red:     #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #e2e8f0;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+
+    /* ── GLASS ── */
+    .glass {
+      background: rgba(13, 20, 38, 0.7);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+    }
+
+    /* ── GLOW CARDS ── */
+    .glow-cyan  { box-shadow: 0 0 40px rgba(34,211,238,0.07), inset 0 1px 0 rgba(34,211,238,0.1); }
+    .glow-indigo{ box-shadow: 0 0 40px rgba(129,140,248,0.07), inset 0 1px 0 rgba(129,140,248,0.1); }
+    .glow-emerald{box-shadow: 0 0 40px rgba(52,211,153,0.07), inset 0 1px 0 rgba(52,211,153,0.1); }
+    .glow-amber { box-shadow: 0 0 40px rgba(251,191,36,0.07),  inset 0 1px 0 rgba(251,191,36,0.1); }
+
+    /* ── GRADIENT BORDER ── */
+    .grad-border {
+      position: relative;
+    }
+    .grad-border::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(34,211,238,0.3) 0%, rgba(129,140,248,0.15) 50%, rgba(34,211,238,0.05) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* ── SCANLINE HEADER ── */
+    .scanline {
+      position: relative;
+      overflow: hidden;
+    }
+    .scanline::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(34,211,238,0.012) 2px,
+        rgba(34,211,238,0.012) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 50;
+      height: 56px;
+      background: rgba(5,8,16,0.92);
+      backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 0;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: auto;
+    }
+    .nav-logo-icon {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #22d3ee, #818cf8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; color: #fff;
+      box-shadow: 0 0 20px rgba(34,211,238,0.3);
+    }
+    .nav-logo-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #f1f5f9;
+    }
+    .nav-logo-text span { color: var(--cyan); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      margin-right: 20px;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748b;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .nav-link:hover { color: #94a3b8; background: rgba(255,255,255,0.04); }
+    .nav-link.active { color: var(--cyan); background: rgba(34,211,238,0.08); }
+    .nav-link i { font-size: 11px; }
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px 5px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+    }
+    .nav-avatar {
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #818cf8, #22d3ee);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #fff;
+    }
+    .nav-username { font-size: 12px; font-weight: 600; color: #cbd5e1; font-family: 'JetBrains Mono', monospace; }
+    .nav-logout { margin-left: 12px; color: #475569; font-size: 12px; text-decoration: none; transition: color 0.15s; }
+    .nav-logout:hover { color: var(--red); }
+
+    /* ── MAIN ── */
+    .main { padding: 80px 28px 40px; max-width: 1440px; margin: 0 auto; }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .page-title { font-size: 22px; font-weight: 800; color: #f1f5f9; letter-spacing: -0.03em; }
+    .page-sub { font-size: 12px; color: #475569; margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #22d3ee, #818cf8);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(34,211,238,0.25);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(34,211,238,0.35); }
+    .btn-primary i { font-size: 11px; }
+
+    /* ── STAT CARDS ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+    @media(max-width:900px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
+    .stat-card {
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      opacity: 0.06;
+    }
+    .stat-card.c-cyan::after  { background: var(--cyan); }
+    .stat-card.c-indigo::after{ background: var(--indigo); }
+    .stat-card.c-emerald::after{background: var(--emerald);}
+    .stat-card.c-amber::after { background: var(--amber); }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #475569;
+      margin-bottom: 10px;
+    }
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-sub { font-size: 11px; color: #334155; }
+    .stat-icon {
+      position: absolute;
+      top: 18px; right: 18px;
+      width: 34px; height: 34px;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+    }
+
+    /* ── CHARTS ── */
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 20px; }
+    @media(max-width:900px){ .charts-grid{ grid-template-columns:1fr; } }
+    .chart-card { border-radius: 16px; padding: 22px; }
+    .chart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .chart-title { font-size: 13px; font-weight: 700; color: #f1f5f9; }
+    .chart-sub { font-size: 11px; color: #475569; margin-top: 2px; }
+    .chart-link { font-size: 11px; color: var(--cyan); text-decoration: none; display: flex; align-items: center; gap: 4px; opacity: 0.8; }
+    .chart-link:hover { opacity: 1; }
+
+    /* ── BANNER ── */
+    .banner { border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; }
+    .banner-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+    .banner input {
+      flex: 1;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      color: #cbd5e1;
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .banner input:focus { border-color: rgba(251,191,36,0.4); }
+    .banner-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.2);
+      color: var(--amber);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+    }
+    .banner-btn:hover { background: rgba(251,191,36,0.18); }
+
+    /* ── TABLE CARD ── */
+    .table-card { border-radius: 16px; overflow: hidden; }
+    .table-head-bar {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .table-title-group { display: flex; align-items: center; gap: 10px; }
+    .table-title { font-size: 14px; font-weight: 700; color: #f1f5f9; }
+    .table-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      color: #475569;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .search-wrap { position: relative; }
+    .search-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #334155; font-size: 11px; }
+    .search-wrap input {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 7px 12px 7px 30px;
+      font-size: 12px;
+      color: #94a3b8;
+      outline: none;
+      width: 220px;
+      transition: border-color 0.15s;
+    }
+    .search-wrap input:focus { border-color: rgba(34,211,238,0.3); }
+    .search-wrap input::placeholder { color: #334155; }
+
+    /* ── TABLE ── */
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.015); }
+    thead th {
+      padding: 11px 16px;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #334155;
+    }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.025); transition: background 0.12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.018); }
+    td { padding: 13px 16px; font-size: 12px; vertical-align: middle; }
+
+    /* ── KEY BADGE ── */
+    .key-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--cyan);
+      background: rgba(34,211,238,0.06);
+      border: 1px solid rgba(34,211,238,0.15);
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── STATUS BADGES ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .badge-active  { background: rgba(52,211,153,0.08); color: var(--emerald); border: 1px solid rgba(52,211,153,0.2); }
+    .badge-disabled{ background: rgba(248,113,113,0.08); color: var(--red);     border: 1px solid rgba(248,113,113,0.2); }
+    .badge-expired { background: rgba(251,191,36,0.08);  color: var(--amber);   border: 1px solid rgba(251,191,36,0.2); }
+    .dot { width: 5px; height: 5px; border-radius: 50%; }
+    .dot-active  { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); animation: pulse 2s infinite; }
+    .dot-disabled{ background: var(--red); }
+    .dot-expired { background: var(--amber); }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+
+    /* ── ENDPOINT BADGE ── */
+    .ep-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--indigo);
+      background: rgba(129,140,248,0.08);
+      border: 1px solid rgba(129,140,248,0.15);
+      padding: 3px 9px;
+      border-radius: 5px;
+    }
+
+    /* ── NOTE BADGE ── */
+    .note-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--amber);
+      background: rgba(251,191,36,0.06);
+      border: 1px solid rgba(251,191,36,0.15);
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+
+    /* ── ACTION BUTTONS ── */
+    .action-btn {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      display: inline-flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: #475569;
+      font-size: 11px;
+      transition: all 0.15s;
+    }
+    .action-btn:hover.edit   { background: rgba(129,140,248,0.12); border-color: rgba(129,140,248,0.3); color: var(--indigo); }
+    .action-btn:hover.delete { background: rgba(248,113,113,0.1);  border-color: rgba(248,113,113,0.3); color: var(--red); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #0a0f1e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(34,211,238,0.05);
+      my: 20px;
+    }
+    .modal-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 13px; font-weight: 700; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
+    .modal-title i { color: var(--cyan); }
+    .modal-close {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: #475569;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.05); color: #94a3b8; }
+    .modal-body { padding: 22px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #475569;
+      margin-bottom: 7px;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 12px;
+      color: #cbd5e1;
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      appearance: none;
+    }
+    .form-input:focus, .form-select:focus { border-color: rgba(34,211,238,0.4); background: rgba(34,211,238,0.02); }
+    .form-select option { background: #0d1426; }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-section {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .form-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #334155;
+      margin-bottom: 12px;
+    }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    .toggle-row label:first-child { font-size: 11px; color: #64748b; font-weight: 500; }
+    input[type=checkbox] { accent-color: var(--cyan); width: 14px; height: 14px; cursor: pointer; }
+    .btn-modal {
+      width: 100%;
+      padding: 11px;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 4px;
+    }
+    .btn-modal-primary {
+      background: linear-gradient(135deg, #22d3ee, #818cf8);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(34,211,238,0.2);
+    }
+    .btn-modal-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 26px rgba(34,211,238,0.3); }
+    .btn-modal-edit { background: rgba(129,140,248,0.15); color: var(--indigo); border: 1px solid rgba(129,140,248,0.25); }
+    .btn-modal-edit:hover { background: rgba(129,140,248,0.22); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      z-index: 200;
+      background: #0d1426;
+      border: 1px solid rgba(52,211,153,0.3);
+      border-radius: 12px;
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--emerald);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(52,211,153,0.1);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state { text-align: center; padding: 60px 20px; color: #334155; }
+    .empty-state i { font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.3; }
+    .empty-state p { font-size: 13px; }
+
+    /* ── HITS DISPLAY ── */
+    .hits-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #f1f5f9; font-size: 13px; }
+    .hits-sub { font-size: 10px; color: #334155; margin-top: 2px; }
+
+    /* ── EXPIRY ── */
+    .expiry-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #94a3b8; }
+    .expiry-time { font-size: 10px; color: #334155; margin-top: 1px; }
+    .expiry-expired { color: var(--red); text-decoration: line-through; }
+
+    /* ── OWNER COL ── */
+    .owner-name { font-weight: 600; color: #e2e8f0; font-size: 13px; }
+    .owner-handle { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #334155; margin-top: 2px; }
+
+    /* ── CUSTOM EXPIRY ── */
+    .hidden { display: none !important; }
+
+    /* SEGMENTED TOGGLE */
+    .seg-toggle { display: inline-flex; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; }
+    .seg-btn { padding: 4px 11px; border-radius: 6px; border: none; background: transparent; color: #64748b; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .seg-btn:hover { color: #94a3b8; }
+    .seg-btn.active { background: linear-gradient(135deg, var(--cyan), var(--indigo)); color: #fff; }
+
+    /* ACCESS HINT */
+    .access-hint { background: rgba(52,211,153,0.05); border: 1px solid rgba(52,211,153,0.15); border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
+
+    /* CHECKBOX GRID */
+    .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 200px; overflow-y: auto; padding: 4px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; }
+    .check-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; cursor: pointer; transition: background 0.12s; font-size: 11px; color: #94a3b8; }
+    .check-item:hover { background: rgba(255,255,255,0.03); }
+    .check-item input { accent-color: var(--cyan); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+    .check-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── HEALTH + ACTIVITY GRID ── */
+    .health-activity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+    @media(max-width:900px){ .health-activity-grid{ grid-template-columns:1fr; } }
+    .hs-card { border-radius: 16px; overflow: hidden; }
+    .hs-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .hs-title { font-size: 13px; font-weight: 700; color: #f1f5f9; display: flex; align-items: center; gap: 8px; }
+    .hs-live { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: var(--emerald); text-transform: uppercase; letter-spacing: 0.05em; }
+    .hs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 6px var(--emerald); animation: pulse 2s infinite; }
+    .hs-link { font-size: 11px; color: var(--cyan); text-decoration: none; display: flex; align-items: center; gap: 4px; opacity: 0.85; }
+    .hs-link:hover { opacity: 1; }
+
+    .hs-body { padding: 18px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .hs-metric { display: flex; align-items: center; gap: 12px; }
+    .hs-metric-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .hs-metric-label { font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 3px; }
+    .hs-metric-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: #f1f5f9; }
+
+    .activity-feed { padding: 6px 20px 14px; max-height: 210px; overflow-y: auto; }
+    .activity-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .activity-row:last-child { border-bottom: none; }
+    .activity-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .activity-dot.ok  { background: var(--emerald); box-shadow: 0 0 5px var(--emerald); }
+    .activity-dot.err { background: var(--red); box-shadow: 0 0 5px var(--red); }
+    .activity-ep { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--indigo); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .activity-code { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px; }
+    .activity-code.ok  { color: var(--emerald); background: rgba(52,211,153,0.1); }
+    .activity-code.err { color: var(--red); background: rgba(248,113,113,0.1); }
+    .activity-time { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #334155; white-space: nowrap; }
+    .activity-empty { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 40px 0; color: #334155; font-size: 12px; }
   </style>
 </head>
-<body class="min-h-screen cs">
-<%- include('_nav', { currentPage: 'dashboard', user: user }) %>
-<main class="pt-20 max-w-[1400px] mx-auto px-4 sm:px-6 pb-12">
+<body>
 
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+<!-- ── NAV ──────────────────────────────────────────── -->
+<nav class="nav scanline">
+  <div class="nav-logo">
+    <div class="nav-logo-icon"><i class="fa-solid fa-satellite-dish"></i></div>
+    <span class="nav-logo-text">OSINT<span>HUB</span></span>
+  </div>
+  <div class="nav-links">
+    <a href="/admin/dashboard" class="nav-link active"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+    <a href="/admin/analytics" class="nav-link"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+    <a href="/admin/login-history" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Login History</a>
+    <a href="/endpoints" class="nav-link"><i class="fa-solid fa-cubes"></i> Endpoints</a>
+  </div>
+  <div class="nav-user">
+    <div class="nav-avatar"><%= user.username.charAt(0).toUpperCase() %></div>
+    <span class="nav-username"><%= user.username %></span>
+  </div>
+  <a href="/logout" class="nav-logout" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></a>
+</nav>
+
+<!-- ── MAIN ──────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Page Header -->
+  <div class="page-header">
     <div>
-      <h1 class="text-2xl font-extrabold text-white">Dashboard</h1>
-      <p class="text-sm text-gray-500 mt-0.5">API Key management & system overview</p>
+      <div class="page-title">Command Center</div>
+      <div class="page-sub">// api key management & system overview</div>
     </div>
-    <button onclick="openModal('generateModal')" class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold rounded-xl text-sm shadow-lg shadow-cyan-500/20 transition">
-      <i class="fa-solid fa-plus"></i> Generate Key
+    <button class="btn-primary" onclick="openModal('generateModal')">
+      <i class="fa-solid fa-plus"></i> New Key
     </button>
   </div>
 
   <!-- Stats -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <div class="glass rounded-2xl p-5" style="box-shadow:0 0 30px rgba(99,102,241,0.08)">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total Keys</span>
-        <div class="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20"><i class="fa-solid fa-key text-indigo-400 text-sm"></i></div>
-      </div>
-      <div class="text-3xl font-extrabold text-white font-mono"><%= keys.length %></div>
-      <div class="text-xs text-gray-600 mt-1">All registered keys</div>
+  <div class="stats-grid">
+    <div class="stat-card glass grad-border glow-indigo c-indigo">
+      <div class="stat-label">Total Keys</div>
+      <div class="stat-value" style="color:var(--indigo)"><%= keys.length %></div>
+      <div class="stat-sub">Registered</div>
+      <div class="stat-icon" style="background:rgba(129,140,248,0.1);color:var(--indigo)"><i class="fa-solid fa-key"></i></div>
     </div>
-    <div class="glass rounded-2xl p-5" style="box-shadow:0 0 30px rgba(16,185,129,0.08)">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Active</span>
-        <div class="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20"><i class="fa-solid fa-shield-check text-emerald-400 text-sm"></i></div>
-      </div>
-      <div class="text-3xl font-extrabold text-emerald-400 font-mono"><%= active %></div>
-      <div class="text-xs text-emerald-500/60 mt-1">Live & operational</div>
+    <div class="stat-card glass grad-border glow-emerald c-emerald">
+      <div class="stat-label">Active</div>
+      <div class="stat-value" style="color:var(--emerald)"><%= active %></div>
+      <div class="stat-sub">Operational</div>
+      <div class="stat-icon" style="background:rgba(52,211,153,0.1);color:var(--emerald)"><i class="fa-solid fa-shield-check"></i></div>
     </div>
-    <div class="glass rounded-2xl p-5" style="box-shadow:0 0 30px rgba(6,182,212,0.08)">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total Hits</span>
-        <div class="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/20"><i class="fa-solid fa-bolt text-cyan-400 text-sm"></i></div>
-      </div>
-      <div class="text-3xl font-extrabold text-cyan-400 font-mono"><%= totalHits || 0 %></div>
-      <div class="text-xs text-gray-600 mt-1">Cumulative requests</div>
+    <div class="stat-card glass grad-border glow-cyan c-cyan">
+      <div class="stat-label">Total Hits</div>
+      <div class="stat-value" style="color:var(--cyan)"><%= totalHits.toLocaleString() %></div>
+      <div class="stat-sub">All time requests</div>
+      <div class="stat-icon" style="background:rgba(34,211,238,0.1);color:var(--cyan)"><i class="fa-solid fa-bolt"></i></div>
     </div>
-    <div class="glass rounded-2xl p-5" style="box-shadow:0 0 30px rgba(168,85,247,0.08)">
-      <div class="flex items-center justify-between mb-3">
-        <span class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Endpoints</span>
-        <div class="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20"><i class="fa-solid fa-cubes text-purple-400 text-sm"></i></div>
-      </div>
-      <div class="text-3xl font-extrabold text-purple-400 font-mono"><%= apis.length %></div>
-      <div class="text-xs text-gray-600 mt-1">Active modules</div>
+    <div class="stat-card glass grad-border glow-amber c-amber">
+      <div class="stat-label">Endpoints</div>
+      <div class="stat-value" style="color:var(--amber)"><%= apis.length %></div>
+      <div class="stat-sub">Active modules</div>
+      <div class="stat-icon" style="background:rgba(251,191,36,0.1);color:var(--amber)"><i class="fa-solid fa-cubes"></i></div>
     </div>
   </div>
 
   <!-- Charts -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
-    <div class="glass rounded-2xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div><h3 class="text-sm font-bold text-white">Request Volume</h3><p class="text-xs text-gray-500">Last 7 days</p></div>
-        <a href="/admin/analytics" class="text-xs text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1">Full Analytics <i class="fa-solid fa-arrow-right text-[10px]"></i></a>
+  <div class="charts-grid">
+    <div class="chart-card glass">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title">Request Volume</div>
+          <div class="chart-sub">Last 7 days</div>
+        </div>
+        <a href="/admin/analytics" class="chart-link">Full view <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
       </div>
-      <div style="height:180px"><canvas id="dailyChart"></canvas></div>
+      <div style="height:160px"><canvas id="dailyChart"></canvas></div>
     </div>
-    <div class="glass rounded-2xl p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div><h3 class="text-sm font-bold text-white">Top Endpoints</h3><p class="text-xs text-gray-500">By hit count</p></div>
-        <a href="/admin/analytics" class="text-xs text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1">View All <i class="fa-solid fa-arrow-right text-[10px]"></i></a>
+    <div class="chart-card glass">
+      <div class="chart-head">
+        <div>
+          <div class="chart-title">Top Endpoints</div>
+          <div class="chart-sub">By usage</div>
+        </div>
       </div>
-      <div style="height:180px"><canvas id="endpointsChart"></canvas></div>
+      <div style="height:160px"><canvas id="endpointsChart"></canvas></div>
     </div>
   </div>
 
-  <!-- Banner -->
-  <div class="glass rounded-2xl p-5 mb-8">
-    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
-      <div class="flex items-center gap-2 flex-shrink-0">
-        <i class="fa-solid fa-bullhorn text-amber-400 text-sm"></i>
-        <span class="text-xs font-bold text-gray-300 uppercase tracking-wider">Maintenance Banner</span>
+  <!-- System Health + Recent Activity -->
+  <div class="health-activity-grid">
+    <!-- System Health -->
+    <div class="hs-card glass">
+      <div class="hs-head">
+        <div class="hs-title"><i class="fa-solid fa-heart-pulse" style="color:var(--emerald)"></i> System Health</div>
+        <span class="hs-live"><span class="hs-dot"></span> Online</span>
       </div>
-      <form action="/admin/update-settings" method="POST" class="flex flex-1 flex-col sm:flex-row gap-3">
-        <input type="text" name="maintenance_message" value="<%= settings.maintenance_message %>" placeholder="Enter maintenance message..."
-          class="flex-1 bg-[#0d1420] border border-gray-800 focus:border-amber-500/50 rounded-xl px-4 py-2 text-sm text-gray-200 outline-none transition">
-        <button type="submit" class="px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/25 text-amber-400 rounded-xl text-xs font-semibold transition flex items-center gap-2">
-          <i class="fa-solid fa-floppy-disk"></i> Save
-        </button>
-      </form>
+      <div class="hs-body">
+        <div class="hs-metric">
+          <div class="hs-metric-icon" style="background:rgba(52,211,153,0.1);color:var(--emerald)"><i class="fa-solid fa-clock"></i></div>
+          <div class="hs-metric-info">
+            <div class="hs-metric-label">Uptime</div>
+            <div class="hs-metric-value" id="uptimeDisplay"><%= Math.floor(health.uptime/3600) %>h <%= Math.floor((health.uptime%3600)/60) %>m</div>
+          </div>
+        </div>
+        <div class="hs-metric">
+          <div class="hs-metric-icon" style="background:rgba(34,211,238,0.1);color:var(--cyan)"><i class="fa-solid fa-plug-circle-check"></i></div>
+          <div class="hs-metric-info">
+            <div class="hs-metric-label">Active APIs</div>
+            <div class="hs-metric-value"><%= health.activeApis %> / <%= health.totalApis %></div>
+          </div>
+        </div>
+        <div class="hs-metric">
+          <div class="hs-metric-icon" style="background:rgba(129,140,248,0.1);color:var(--indigo)"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="hs-metric-info">
+            <div class="hs-metric-label">Success Rate</div>
+            <div class="hs-metric-value"><%= health.successRate %>%</div>
+          </div>
+        </div>
+        <div class="hs-metric">
+          <div class="hs-metric-icon" style="background:rgba(251,191,36,0.1);color:var(--amber)"><i class="fa-solid fa-server"></i></div>
+          <div class="hs-metric-info">
+            <div class="hs-metric-label">Total Served</div>
+            <div class="hs-metric-value"><%= health.totalReq.toLocaleString() %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="hs-card glass">
+      <div class="hs-head">
+        <div class="hs-title"><i class="fa-solid fa-wave-square" style="color:var(--cyan)"></i> Live Activity</div>
+        <a href="/admin/analytics" class="hs-link">View all <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+      </div>
+      <div class="activity-feed">
+        <% if(recentActivity && recentActivity.length > 0) { %>
+          <% recentActivity.forEach(function(a) { %>
+            <div class="activity-row">
+              <span class="activity-dot <%= a.ok ? 'ok' : 'err' %>"></span>
+              <span class="activity-ep"><%= a.endpoint %></span>
+              <span class="activity-code <%= a.ok ? 'ok' : 'err' %>"><%= a.code %></span>
+              <span class="activity-time"><%= new Date(a.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) %></span>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <div class="activity-empty"><i class="fa-solid fa-inbox"></i> No activity yet</div>
+        <% } %>
+      </div>
     </div>
   </div>
+
+  <!-- Maintenance Banner -->
+  <form action="/admin/update-settings" method="POST">
+    <div class="banner glass">
+      <div class="banner-label"><i class="fa-solid fa-triangle-exclamation"></i> Banner</div>
+      <input type="text" name="maintenance_message" value="<%= settings.maintenance_message %>" placeholder="Maintenance message...">
+      <button type="submit" class="banner-btn"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+    </div>
+  </form>
 
   <!-- Keys Table -->
-  <div class="glass rounded-2xl overflow-hidden">
-    <div class="p-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <h2 class="text-base font-bold text-white">API Keys</h2>
-        <span class="text-xs font-mono bg-gray-800 border border-gray-700 text-gray-400 px-2 py-0.5 rounded-full"><%= keys.length %></span>
+  <div class="table-card glass">
+    <div class="table-head-bar">
+      <div class="table-title-group">
+        <span class="table-title">API Keys</span>
+        <span class="table-count"><%= keys.length %> total</span>
       </div>
-      <div class="relative">
-        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 text-xs"></i>
-        <input type="text" id="searchInput" onkeyup="filterKeys()" placeholder="Search name, key..."
-          class="bg-[#0d1420] border border-gray-800 rounded-xl pl-8 pr-4 py-2 text-xs text-gray-300 placeholder-gray-600 outline-none focus:border-cyan-500/40 transition w-full sm:w-56">
+      <div class="search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" onkeyup="filterKeys()" placeholder="Search keys...">
       </div>
     </div>
-    <div class="overflow-x-auto cs">
-      <table class="w-full text-left" id="keysTable">
-        <thead class="text-[10px] font-mono uppercase tracking-wider text-gray-500 border-b border-white/5 bg-gray-900/40">
+    <div style="overflow-x:auto">
+      <table id="keysTable">
+        <thead>
           <tr>
-            <th class="py-3 px-4">Label / Owner</th>
-            <th class="py-3 px-4">API Key</th>
-            <th class="py-3 px-4">Endpoint</th>
-            <th class="py-3 px-4">Hits</th>
-            <th class="py-3 px-4">Expires</th>
-            <th class="py-3 px-4">Status</th>
-            <th class="py-3 px-4 text-right">Actions</th>
+            <th style="text-align:left">Client</th>
+            <th style="text-align:left">Key</th>
+            <th style="text-align:left">Access</th>
+            <th style="text-align:left">Hits</th>
+            <th style="text-align:left">Expires</th>
+            <th style="text-align:left">Status</th>
+            <th style="text-align:right">Actions</th>
           </tr>
         </thead>
-        <tbody class="text-xs divide-y divide-white/[0.04]">
-          <% if (keys && keys.length > 0) { %>
+        <tbody>
+          <% if(keys && keys.length > 0) { %>
             <% keys.forEach(function(key) {
-              let allowed = 'All APIs';
-              try { let p=JSON.parse(key.allowed_apis); if(Array.isArray(p)&&!p.includes('all')) allowed=p.join(', '); } catch(e){}
-              const exp = key.expires_at ? new Date(key.expires_at) : null;
-              const isExpired = exp && exp < new Date();
+              var allowed = 'All APIs';
+              try { var p=JSON.parse(key.allowed_apis); if(Array.isArray(p)&&!p.includes('all')) allowed=p.join(', '); } catch(e){}
+              var exp = key.expires_at ? new Date(key.expires_at) : null;
+              var isExpired = exp && exp < new Date();
             %>
-            <tr class="hover:bg-white/[0.02] transition">
-              <td class="py-3.5 px-4">
-                <div class="font-semibold text-gray-200"><%= key.name || 'Unnamed Key' %></div>
-                <div class="text-[10px] text-gray-600 font-mono"><%= key.owner_username || owner %></div>
+            <tr>
+              <td>
+                <div class="owner-name"><%= key.name || 'Unnamed' %></div>
+                <div class="owner-handle"><%= key.owner_username || owner %></div>
                 <% if(key.note_enabled && key.key_note) { %>
-                  <span class="mt-1 text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded inline-block"><i class="fa-solid fa-note-sticky text-[9px] mr-0.5"></i><%= key.key_note %></span>
+                  <span class="note-badge"><i class="fa-solid fa-note-sticky" style="font-size:9px"></i><%= key.key_note %></span>
                 <% } %>
               </td>
-              <td class="py-3.5 px-4 font-mono">
-                <div class="flex items-center gap-2">
-                  <span class="text-cyan-400 bg-cyan-950/50 border border-cyan-800/30 px-2 py-1 rounded text-[11px] tracking-wide"><%= key.key %></span>
-                  <button onclick="copyKey('<%= key.key %>')" class="text-gray-600 hover:text-gray-300 transition" title="Copy"><i class="fa-regular fa-copy text-xs"></i></button>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="key-badge"><%= key.key %></span>
+                  <button onclick="copyKey('<%= key.key %>')" class="action-btn" style="border:none" title="Copy"><i class="fa-regular fa-copy"></i></button>
                 </div>
               </td>
-              <td class="py-3.5 px-4 font-mono">
-                <span class="px-2 py-1 bg-gray-800/80 border border-gray-700/50 rounded text-gray-400 text-[11px]">
-                  <i class="fa-solid fa-cube text-indigo-400 mr-1 text-[9px]"></i><%= allowed %>
-                </span>
-              </td>
-              <td class="py-3.5 px-4 font-mono">
-                <div class="font-bold text-white"><%= key.hits %></div>
-                <div class="text-[10px] text-gray-600">
-                  <% if(key.unlimited_hits){%><span class="text-emerald-400"><i class="fa-solid fa-infinity"></i> Unlimited</span><%}else if(key.rate_limit_enabled){%><%= key.rate_limit_per_day %>/day<%}else{%>Standard<%}%>
+              <td><span class="ep-badge"><%= allowed %></span></td>
+              <td>
+                <div class="hits-val"><%= key.hits.toLocaleString() %></div>
+                <div class="hits-sub">
+                  <% if(key.unlimited_hits){ %><span style="color:var(--emerald);font-family:'JetBrains Mono',monospace;font-size:10px"><i class="fa-solid fa-infinity"></i> unlimited</span>
+                  <%} else if(key.rate_limit_enabled){ %><%= key.rate_limit_per_day %>/day<%} else {%>standard<%}%>
                 </div>
               </td>
-              <td class="py-3.5 px-4">
-                <% if(!exp){%><span class="text-gray-500 font-mono text-[11px]">Never</span><%}else{%>
-                  <div class="font-mono text-[11px] <%=isExpired?'text-red-400 line-through':'text-gray-300'%>"><%= exp.toLocaleDateString() %></div>
-                  <div class="text-[10px] text-gray-600"><%= exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) %></div>
+              <td>
+                <% if(!exp){ %><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#334155">never</span>
+                <%} else {%>
+                  <div class="expiry-val <%=isExpired?'expiry-expired':''%>"><%= exp.toLocaleDateString() %></div>
+                  <div class="expiry-time"><%= exp.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) %></div>
                 <%}%>
               </td>
-              <td class="py-3.5 px-4">
+              <td>
                 <%if(key.api_enabled===0){%>
-                  <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 inline-flex items-center gap-1"><i class="fa-solid fa-ban text-[8px]"></i> Disabled</span>
+                  <span class="badge badge-disabled"><span class="dot dot-disabled"></span>Off</span>
+                <%}else if(isExpired){%>
+                  <span class="badge badge-expired"><span class="dot dot-expired"></span>Expired</span>
                 <%}else if(key.status==='active'){%>
-                  <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span> Active</span>
+                  <span class="badge badge-active"><span class="dot dot-active"></span>Live</span>
                 <%}else{%>
-                  <span class="px-2 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span> <%= key.status %></span>
+                  <span class="badge badge-expired"><span class="dot dot-expired"></span><%= key.status %></span>
                 <%}%>
               </td>
-              <td class="py-3.5 px-4">
-                <div class="flex items-center justify-end gap-1.5">
+              <td style="text-align:right">
+                <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
                   <button
                     onclick="openEditModal(this)"
                     data-id="<%= key.id %>"
@@ -182,24 +846,27 @@
                     data-enabled="<%= key.api_enabled %>"
                     data-unlimited="<%= key.unlimited_hits %>"
                     data-allowed="<%= encodeURIComponent(key.allowed_apis||'') %>"
-                    data-rl-enabled="<%= key.rate_limit_enabled %>"
                     data-rl-day="<%= key.rate_limit_per_day %>"
                     data-rl-min="<%= key.rate_limit_per_minute %>"
-                    data-note-enabled="<%= key.note_enabled %>"
                     data-note="<%= encodeURIComponent(key.key_note||'') %>"
-                    class="p-1.5 rounded-lg bg-gray-800 hover:bg-indigo-500/20 text-gray-400 hover:text-indigo-400 transition" title="Edit">
-                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                    class="action-btn edit" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i>
                   </button>
-                  <form action="/admin/delete-key" method="POST" class="inline" onsubmit="return confirm('Delete this key permanently?')">
+                  <form action="/admin/delete-key" method="POST" style="display:inline" onsubmit="return confirm('Delete permanently?')">
                     <input type="hidden" name="id" value="<%= key.id %>">
-                    <button type="submit" class="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition" title="Delete"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    <button type="submit" class="action-btn delete" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
                   </form>
                 </div>
               </td>
             </tr>
             <% }); %>
           <% } else { %>
-            <tr><td colspan="7" class="py-16 text-center text-gray-600"><i class="fa-solid fa-key text-3xl block mb-3 opacity-30"></i>No API keys found. Generate your first key.</td></tr>
+            <tr><td colspan="7">
+              <div class="empty-state">
+                <i class="fa-solid fa-key"></i>
+                <p>No keys yet. Generate your first one.</p>
+              </div>
+            </td></tr>
           <% } %>
         </tbody>
       </table>
@@ -207,168 +874,397 @@
   </div>
 </main>
 
-<!-- GENERATE MODAL -->
-<div id="generateModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-  <div class="glass w-full max-w-lg rounded-2xl shadow-2xl my-8" style="border:1px solid rgba(255,255,255,0.08)">
-    <div class="p-5 border-b border-white/5 flex items-center justify-between">
-      <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-key text-cyan-400"></i> Generate New API Key</h3>
-      <button onclick="closeModal('generateModal')" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+<!-- ── GENERATE MODAL ─────────────────────────────────── -->
+<div id="generateModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-key"></i> Generate API Key</div>
+      <button class="modal-close" onclick="closeModal('generateModal')"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <form action="/admin/generate-key" method="POST" class="p-6 space-y-4">
-      <div>
-        <label class="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Label / Client Name</label>
-        <input type="text" name="name" required placeholder="e.g. Premium Client" class="w-full bg-[#0d1420] border border-gray-800 focus:border-cyan-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 outline-none transition">
-      </div>
-      <div class="p-3 bg-gray-900/50 border border-gray-800 rounded-xl space-y-2">
-        <div class="flex items-center justify-between">
-          <label class="text-xs font-semibold text-gray-400">Custom Key String</label>
-          <input type="checkbox" id="enable_custom" name="enable_custom" onchange="document.getElementById('custom_key_input').disabled=!this.checked" class="rounded">
+    <div class="modal-body">
+      <form action="/admin/generate-key" method="POST">
+        <div class="form-group">
+          <label class="form-label">Client Name</label>
+          <input type="text" name="name" required placeholder="e.g. Premium Client" class="form-input">
         </div>
-        <input type="text" id="custom_key_input" name="custom_key" disabled placeholder="e.g. SAHIL_VIP_99" class="w-full bg-[#070b11] border border-gray-800 rounded-lg px-3 py-2 text-xs text-gray-400 outline-none disabled:opacity-30 transition">
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">Allowed Endpoint</label>
-        <select name="selected_apis" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 outline-none">
-          <option value="all">All Endpoints (Full Access)</option>
-          <% apis.forEach(function(api){%><option value="<%= api.name %>"><%= api.display_name %> (<%= api.endpoint %>)</option><%});%>
-        </select>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block text-xs font-semibold text-gray-400 mb-1">Validity</label>
-          <select name="expiry" id="expirySelect" onchange="toggleCustomExpiry(this.value)" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-200 outline-none">
-            <option value="never">Lifetime</option><option value="3d">3 Days</option><option value="7d">7 Days</option><option value="30d">30 Days</option><option value="custom">Custom</option>
+        <div class="form-section">
+          <div class="form-section-label">Custom Key</div>
+          <div class="toggle-row" style="margin-bottom:10px">
+            <label>Enable custom key string</label>
+            <input type="checkbox" id="enable_custom" name="enable_custom" onchange="document.getElementById('custom_key_input').disabled=!this.checked">
+          </div>
+          <input type="text" id="custom_key_input" name="custom_key" disabled placeholder="SAHIL_VIP_KEY" class="form-input" style="opacity:0.4">
+        </div>
+        <div class="form-group">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <label class="form-label" style="margin-bottom:0">API Access</label>
+            <div class="seg-toggle">
+              <button type="button" class="seg-btn active" data-mode="all" onclick="setAccessMode('gen','all')">All</button>
+              <button type="button" class="seg-btn" data-mode="single" onclick="setAccessMode('gen','single')">Single</button>
+              <button type="button" class="seg-btn" data-mode="multi" onclick="setAccessMode('gen','multi')">Multiple</button>
+            </div>
+          </div>
+
+          <!-- ALL mode -->
+          <div id="gen-all-box" class="access-hint">
+            <i class="fa-solid fa-globe" style="color:var(--emerald)"></i> Full access to every endpoint
+            <input type="hidden" name="selected_apis" value="all" id="gen-all-input">
+          </div>
+
+          <!-- SINGLE mode -->
+          <select id="gen-single-box" name="selected_apis" class="form-select hidden" disabled>
+            <% apis.forEach(function(api){%><option value="<%= api.name %>"><%= api.display_name %></option><%});%>
           </select>
+
+          <!-- MULTI mode -->
+          <div id="gen-multi-box" class="checkbox-grid hidden">
+            <% apis.forEach(function(api){%>
+              <label class="check-item">
+                <input type="checkbox" name="selected_apis" value="<%= api.name %>" disabled>
+                <span><%= api.display_name %></span>
+              </label>
+            <%});%>
+          </div>
         </div>
-        <div>
-          <label class="block text-xs font-semibold text-gray-400 mb-1">Unlimited Usage</label>
-          <select name="unlimited_hits" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-200 outline-none">
-            <option value="false">No (Rate Limited)</option><option value="true">Yes (Unlimited)</option>
-          </select>
+        <div class="form-grid-2" style="margin-bottom:16px">
+          <div>
+            <label class="form-label">Validity</label>
+            <select name="expiry" id="expirySelect" onchange="toggleCustomExpiry(this.value)" class="form-select">
+              <option value="never">Lifetime</option>
+              <option value="3d">3 Days</option>
+              <option value="7d">7 Days</option>
+              <option value="30d">30 Days</option>
+              <option value="custom">Custom Date</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Usage</label>
+            <select name="unlimited_hits" class="form-select">
+              <option value="false">Rate Limited</option>
+              <option value="true">Unlimited</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <div id="customExpiryContainer" class="hidden grid grid-cols-2 gap-3">
-        <div><label class="block text-[11px] text-gray-500 mb-1">Expiry Date</label><input type="date" name="custom_expiry_date" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 outline-none"></div>
-        <div><label class="block text-[11px] text-gray-500 mb-1">Expiry Time</label><input type="time" name="custom_expiry_time" value="23:59" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 outline-none"></div>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block text-[10px] text-gray-600 mb-1">Daily Limit</label>
-          <input type="number" name="rate_limit_per_day" value="100" class="w-full bg-[#070b11] border border-gray-800 rounded-lg p-1.5 text-center text-gray-200 outline-none text-xs">
+        <div id="customExpiryContainer" class="form-grid-2 hidden" style="margin-bottom:16px">
+          <div>
+            <label class="form-label">Date</label>
+            <input type="date" name="custom_expiry_date" class="form-input">
+          </div>
+          <div>
+            <label class="form-label">Time</label>
+            <input type="time" name="custom_expiry_time" value="23:59" class="form-input">
+          </div>
         </div>
-        <div>
-          <label class="block text-[10px] text-gray-600 mb-1">Per Minute</label>
-          <input type="number" name="rate_limit_per_minute" value="5" class="w-full bg-[#070b11] border border-gray-800 rounded-lg p-1.5 text-center text-gray-200 outline-none text-xs">
+        <div class="form-section">
+          <div class="form-section-label">Rate Limits</div>
+          <div class="form-grid-2">
+            <div>
+              <label class="form-label">Daily</label>
+              <input type="number" name="rate_limit_per_day" value="100" class="form-input" style="text-align:center">
+            </div>
+            <div>
+              <label class="form-label">Per Minute</label>
+              <input type="number" name="rate_limit_per_minute" value="5" class="form-input" style="text-align:center">
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="space-y-2">
-        <div class="flex items-center justify-between">
-          <label class="text-xs font-semibold text-gray-400">Attach Note</label>
-          <input type="checkbox" name="note_enabled" onchange="document.getElementById('key_note_input').classList.toggle('hidden')" class="rounded">
+        <div class="form-group">
+          <label class="form-label">Note (optional)</label>
+          <input type="text" name="key_note" placeholder="e.g. VIP access" class="form-input">
         </div>
-        <input type="text" id="key_note_input" name="key_note" placeholder="Optional note..." class="hidden w-full bg-[#0d1420] border border-gray-800 rounded-xl px-4 py-2 text-xs text-gray-200 outline-none">
-      </div>
-      <button type="submit" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold rounded-xl text-sm transition shadow-lg">Generate Key</button>
-    </form>
+        <button type="submit" class="btn-modal btn-modal-primary">Generate Key</button>
+      </form>
+    </div>
   </div>
 </div>
 
-<!-- EDIT MODAL -->
-<div id="editModal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-  <div class="glass w-full max-w-lg rounded-2xl shadow-2xl my-8" style="border:1px solid rgba(255,255,255,0.08)">
-    <div class="p-5 border-b border-white/5 flex items-center justify-between">
-      <h3 class="text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-sliders text-cyan-400"></i> Edit Key Settings</h3>
-      <button onclick="closeModal('editModal')" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+<!-- ── EDIT MODAL ─────────────────────────────────────── -->
+<div id="editModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fa-solid fa-sliders"></i> Edit Key</div>
+      <button class="modal-close" onclick="closeModal('editModal')"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <form id="editKeyForm" onsubmit="submitEditKey(event)" class="p-6 space-y-4">
-      <input type="hidden" id="edit_key_id" name="key_id">
-      <div>
-        <label class="block text-xs font-semibold text-gray-400 mb-1">Label</label>
-        <input type="text" id="edit_name" name="name" required class="w-full bg-[#0d1420] border border-gray-800 focus:border-cyan-500/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 outline-none transition">
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-gray-400 mb-1">Allowed Endpoint</label>
-        <select id="edit_selected_api" name="selected_apis" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-200 outline-none">
-          <option value="all">All Endpoints</option>
-          <% apis.forEach(function(api){%><option value="<%= api.name %>"><%= api.display_name %></option><%});%>
-        </select>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block text-xs font-semibold text-gray-400 mb-1">Key Status</label>
-          <select id="edit_api_enabled" name="api_enabled" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-200 outline-none">
-            <option value="1">Enabled</option><option value="0">Disabled</option>
+    <div class="modal-body">
+      <form id="editKeyForm" onsubmit="submitEditKey(event)">
+        <input type="hidden" id="edit_key_id" name="key_id">
+        <div class="form-group">
+          <label class="form-label">Client Name</label>
+          <input type="text" id="edit_name" name="name" required class="form-input">
+        </div>
+        <div class="form-group">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <label class="form-label" style="margin-bottom:0">API Access</label>
+            <div class="seg-toggle">
+              <button type="button" class="seg-btn active" data-mode="all" onclick="setAccessMode('edit','all')">All</button>
+              <button type="button" class="seg-btn" data-mode="single" onclick="setAccessMode('edit','single')">Single</button>
+              <button type="button" class="seg-btn" data-mode="multi" onclick="setAccessMode('edit','multi')">Multiple</button>
+            </div>
+          </div>
+
+          <div id="edit-all-box" class="access-hint">
+            <i class="fa-solid fa-globe" style="color:var(--emerald)"></i> Full access to every endpoint
+            <input type="hidden" name="selected_apis" value="all" id="edit-all-input">
+          </div>
+
+          <select id="edit-single-box" name="selected_apis" class="form-select hidden" disabled>
+            <% apis.forEach(function(api){%><option value="<%= api.name %>"><%= api.display_name %></option><%});%>
           </select>
+
+          <div id="edit-multi-box" class="checkbox-grid hidden">
+            <% apis.forEach(function(api){%>
+              <label class="check-item">
+                <input type="checkbox" name="selected_apis" value="<%= api.name %>" disabled>
+                <span><%= api.display_name %></span>
+              </label>
+            <%});%>
+          </div>
         </div>
-        <div>
-          <label class="block text-xs font-semibold text-gray-400 mb-1">Unlimited Hits</label>
-          <select id="edit_unlimited_hits" name="unlimited_hits" class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-200 outline-none">
-            <option value="false">No (Rate Limited)</option><option value="true">Yes (Unlimited)</option>
-          </select>
+        <div class="form-grid-2" style="margin-bottom:16px">
+          <div>
+            <label class="form-label">Key Status</label>
+            <select id="edit_api_enabled" name="api_enabled" class="form-select">
+              <option value="1">Enabled</option>
+              <option value="0">Disabled</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Usage</label>
+            <select id="edit_unlimited_hits" name="unlimited_hits" class="form-select">
+              <option value="false">Rate Limited</option>
+              <option value="true">Unlimited</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block text-[10px] text-gray-600 mb-1">Daily Limit</label>
-          <input type="number" id="edit_rate_limit_per_day" name="rate_limit_per_day" class="w-full bg-[#070b11] border border-gray-800 rounded-lg p-1.5 text-center text-gray-200 outline-none text-xs">
+        <div class="form-section">
+          <div class="form-section-label">Rate Limits</div>
+          <div class="form-grid-2">
+            <div>
+              <label class="form-label">Daily</label>
+              <input type="number" id="edit_rate_limit_per_day" name="rate_limit_per_day" class="form-input" style="text-align:center">
+            </div>
+            <div>
+              <label class="form-label">Per Minute</label>
+              <input type="number" id="edit_rate_limit_per_minute" name="rate_limit_per_minute" class="form-input" style="text-align:center">
+            </div>
+          </div>
         </div>
-        <div>
-          <label class="block text-[10px] text-gray-600 mb-1">Per Minute</label>
-          <input type="number" id="edit_rate_limit_per_minute" name="rate_limit_per_minute" class="w-full bg-[#070b11] border border-gray-800 rounded-lg p-1.5 text-center text-gray-200 outline-none text-xs">
+        <div class="form-group">
+          <label class="form-label">Note</label>
+          <input type="text" id="edit_key_note" name="key_note" placeholder="Optional note..." class="form-input">
         </div>
-      </div>
-      <div class="space-y-2">
-        <label class="block text-xs font-semibold text-gray-400">Note</label>
-        <input type="text" id="edit_key_note" name="key_note" placeholder="Note..." class="w-full bg-[#0d1420] border border-gray-800 rounded-xl px-4 py-2 text-xs text-gray-200 outline-none">
-      </div>
-      <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition">Update Key</button>
-    </form>
+        <button type="submit" class="btn-modal btn-modal-edit">Update Key</button>
+      </form>
+    </div>
   </div>
 </div>
 
-<!-- Toast -->
-<div id="toast" class="fixed bottom-6 right-6 z-50 hidden bg-gray-900 border border-gray-700 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
-  <i class="fa-solid fa-check text-emerald-400"></i> <span id="toastMsg">Copied!</span>
+<!-- ── TOAST ──────────────────────────────────────────── -->
+<div class="toast" id="toast">
+  <i class="fa-solid fa-check"></i>
+  <span id="toastMsg">Copied!</span>
 </div>
 
 <script>
 var dailyVolumeData  = <%- JSON.stringify(dailyVolume  || []) %>;
 var topEndpointsData = <%- JSON.stringify(topEndpoints || []) %>;
 
-new Chart(document.getElementById('dailyChart'),{type:'line',data:{labels:dailyVolumeData.map(function(d){return d.date;}),datasets:[{label:'Requests',data:dailyVolumeData.map(function(d){return d.total;}),borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,0.08)',tension:0.4,fill:true,pointRadius:4,pointBackgroundColor:'#06b6d4',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+// Charts
+new Chart(document.getElementById('dailyChart'), {
+  type: 'line',
+  data: {
+    labels: dailyVolumeData.map(function(d){ return d.date; }),
+    datasets: [{
+      data: dailyVolumeData.map(function(d){ return d.total; }),
+      borderColor: '#22d3ee',
+      backgroundColor: 'rgba(34,211,238,0.05)',
+      tension: 0.4, fill: true,
+      pointRadius: 3,
+      pointBackgroundColor: '#22d3ee',
+      pointBorderColor: '#050810',
+      pointBorderWidth: 2,
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: {
+      backgroundColor: '#0d1426', borderColor: 'rgba(255,255,255,0.08)',
+      borderWidth: 1, titleColor: '#94a3b8', bodyColor: '#22d3ee',
+      titleFont: { family: 'JetBrains Mono', size: 10 },
+      bodyFont: { family: 'JetBrains Mono', size: 12 }
+    }},
+    scales: {
+      x: { ticks: { color: '#334155', font: { size: 9, family: 'JetBrains Mono' }}, grid: { color: 'rgba(255,255,255,0.025)' }, border: { display: false }},
+      y: { ticks: { color: '#334155', font: { size: 9, family: 'JetBrains Mono' }}, grid: { color: 'rgba(255,255,255,0.025)' }, border: { display: false }}
+    }
+  }
+});
 
-new Chart(document.getElementById('endpointsChart'),{type:'bar',data:{labels:topEndpointsData.map(function(d){return d.endpoint;}),datasets:[{label:'Hits',data:topEndpointsData.map(function(d){return d.hits;}),backgroundColor:['rgba(99,102,241,0.7)','rgba(6,182,212,0.7)','rgba(16,185,129,0.7)','rgba(245,158,11,0.7)','rgba(239,68,68,0.7)'],borderRadius:6,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+new Chart(document.getElementById('endpointsChart'), {
+  type: 'doughnut',
+  data: {
+    labels: topEndpointsData.map(function(d){ return d.endpoint; }),
+    datasets: [{
+      data: topEndpointsData.map(function(d){ return d.hits; }),
+      backgroundColor: ['rgba(34,211,238,0.7)','rgba(129,140,248,0.7)','rgba(52,211,153,0.7)','rgba(251,191,36,0.7)','rgba(248,113,113,0.7)'],
+      borderWidth: 0, hoverOffset: 4
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: {
+        display: true, position: 'right',
+        labels: { color: '#475569', font: { size: 9, family: 'JetBrains Mono' }, padding: 10, boxWidth: 8, boxHeight: 8 }
+      },
+      tooltip: {
+        backgroundColor: '#0d1426', borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+        titleColor: '#94a3b8', bodyColor: '#22d3ee',
+        titleFont: { family: 'JetBrains Mono', size: 10 }, bodyFont: { family: 'JetBrains Mono', size: 11 }
+      }
+    }
+  }
+});
 
-function openModal(id){document.getElementById(id).classList.remove('hidden');}
-function closeModal(id){document.getElementById(id).classList.add('hidden');}
-function toggleCustomExpiry(v){var c=document.getElementById('customExpiryContainer');v==='custom'?c.classList.remove('hidden'):c.classList.add('hidden');}
-function copyKey(text){navigator.clipboard.writeText(text).then(function(){document.getElementById('toastMsg').textContent='Key copied!';var t=document.getElementById('toast');t.classList.remove('hidden');setTimeout(function(){t.classList.add('hidden');},2000);});}
-function filterKeys(){var val=document.getElementById('searchInput').value.toUpperCase();document.getElementById('keysTable').querySelectorAll('tbody tr').forEach(function(tr){tr.style.display=tr.textContent.toUpperCase().includes(val)?'':'none';});}
+// Modals
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(function(el) {
+  el.addEventListener('click', function(e) { if(e.target === el) el.classList.remove('open'); });
+});
 
-function openEditModal(btn){
+// Expiry toggle
+function toggleCustomExpiry(v) {
+  var c = document.getElementById('customExpiryContainer');
+  v === 'custom' ? c.classList.remove('hidden') : c.classList.add('hidden');
+}
+
+// Copy key
+function copyKey(text) {
+  navigator.clipboard.writeText(text).then(function() {
+    var t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = 'Key copied!';
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 2200);
+  });
+}
+
+// Filter
+function filterKeys() {
+  var val = document.getElementById('searchInput').value.toUpperCase();
+  document.getElementById('keysTable').querySelectorAll('tbody tr').forEach(function(tr) {
+    tr.style.display = tr.textContent.toUpperCase().includes(val) ? '' : 'none';
+  });
+}
+
+// Edit modal
+// ── ACCESS MODE TOGGLE ──
+// Only the active mode's inputs stay enabled — disabled inputs don't submit,
+// so exactly one "selected_apis" source reaches the backend.
+function setAccessMode(scope, mode) {
+  var allBox    = document.getElementById(scope === 'gen' ? 'gen-all-box'    : 'edit-all-box');
+  var singleBox = document.getElementById(scope === 'gen' ? 'gen-single-box' : 'edit-single-box');
+  var multiBox  = document.getElementById(scope === 'gen' ? 'gen-multi-box'  : 'edit-multi-box');
+  var allInput  = document.getElementById(scope === 'gen' ? 'gen-all-input'  : 'edit-all-input');
+
+  // hide all
+  allBox.classList.add('hidden');
+  singleBox.classList.add('hidden');
+  multiBox.classList.add('hidden');
+
+  // disable all inputs
+  allInput.disabled = true;
+  singleBox.disabled = true;
+  multiBox.querySelectorAll('input').forEach(function(c){ c.disabled = true; });
+
+  // enable + show selected
+  if (mode === 'all') {
+    allBox.classList.remove('hidden');
+    allInput.disabled = false;
+  } else if (mode === 'single') {
+    singleBox.classList.remove('hidden');
+    singleBox.disabled = false;
+  } else if (mode === 'multi') {
+    multiBox.classList.remove('hidden');
+    multiBox.querySelectorAll('input').forEach(function(c){ c.disabled = false; });
+  }
+
+  // toggle button active state
+  var container = scope === 'gen' ? document.getElementById('generateModal') : document.getElementById('editModal');
+  container.querySelectorAll('.seg-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+}
+
+function openEditModal(btn) {
   var d = btn.dataset;
   document.getElementById('edit_key_id').value = d.id;
   document.getElementById('edit_name').value = decodeURIComponent(d.name || '');
   document.getElementById('edit_api_enabled').value = d.enabled !== undefined ? d.enabled : 1;
   document.getElementById('edit_unlimited_hits').value = d.unlimited === '1' ? 'true' : 'false';
-  try {
-    var a = JSON.parse(decodeURIComponent(d.allowed || '["all"]'));
-    document.getElementById('edit_selected_api').value = (Array.isArray(a) && a.length > 0 && !a.includes('all')) ? a[0] : 'all';
-  } catch(e) { document.getElementById('edit_selected_api').value = 'all'; }
   document.getElementById('edit_rate_limit_per_day').value = d.rlDay || 100;
   document.getElementById('edit_rate_limit_per_minute').value = d.rlMin || 0;
   document.getElementById('edit_key_note').value = decodeURIComponent(d.note || '');
+
+  // Determine access mode from saved allowed_apis
+  var allowed = ['all'];
+  try { allowed = JSON.parse(decodeURIComponent(d.allowed || '["all"]')); } catch(e) { allowed = ['all']; }
+
+  if (!Array.isArray(allowed) || allowed.includes('all') || allowed.length === 0) {
+    setAccessMode('edit', 'all');
+  } else if (allowed.length === 1) {
+    setAccessMode('edit', 'single');
+    document.getElementById('edit-single-box').value = allowed[0];
+  } else {
+    setAccessMode('edit', 'multi');
+    document.getElementById('edit-multi-box').querySelectorAll('input').forEach(function(c){
+      c.checked = allowed.indexOf(c.value) >= 0;
+    });
+  }
+
   openModal('editModal');
 }
 
-async function submitEditKey(e){
+async function submitEditKey(e) {
   e.preventDefault();
-  var data = Object.fromEntries(new FormData(document.getElementById('editKeyForm')).entries());
-  var res = await fetch('/admin/edit-key', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+  var form = document.getElementById('editKeyForm');
+  var fd = new FormData(form);
+  // FormData handles multi-value selected_apis correctly via getAll
+  var data = {};
+  fd.forEach(function(value, key) {
+    if (key === 'selected_apis') {
+      if (!data.selected_apis) data.selected_apis = [];
+      data.selected_apis.push(value);
+    } else {
+      data[key] = value;
+    }
+  });
+  // flatten single-value selected_apis
+  if (data.selected_apis && data.selected_apis.length === 1) data.selected_apis = data.selected_apis[0];
+
+  var res = await fetch('/admin/edit-key', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
   var result = await res.json();
-  if(result.success) window.location.reload();
-  else alert('Error: ' + (result.error || 'Failed'));
+  if(result.success) {
+    document.getElementById('toastMsg').textContent = 'Key updated!';
+    var t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); window.location.reload(); }, 1200);
+  } else {
+    alert('Error: ' + (result.error || 'Failed'));
+  }
 }
+
+// Enable custom key input when checkbox enabled
+document.getElementById('enable_custom').addEventListener('change', function() {
+  var inp = document.getElementById('custom_key_input');
+  inp.disabled = !this.checked;
+  inp.style.opacity = this.checked ? '1' : '0.4';
+});
+
+// Init default access mode = All for both modals
+setAccessMode('gen', 'all');
 </script>
 </body>
 </html>
