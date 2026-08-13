@@ -398,22 +398,47 @@ app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 // ─── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
 app.get('/admin/dashboard', requireAuth, async (req, res) => {
     try {
-        const [keys, apis, settings, chartRows, dailyVolume, topEndpoints] = await Promise.all([
+        const [keys, apis, settings, chartRows, dailyVolume, topEndpoints, recentActivity, reqStats] = await Promise.all([
             dbAll('SELECT * FROM api_keys ORDER BY created_at DESC'),
             dbAll('SELECT * FROM available_apis'),
             dbGet('SELECT * FROM settings WHERE id = 1'),
             dbAll('SELECT date, SUM(calls) as total_calls FROM daily_calls GROUP BY date ORDER BY date DESC LIMIT 7'),
             dbAll('SELECT date, SUM(calls) as total FROM daily_calls GROUP BY date ORDER BY date DESC LIMIT 7'),
-            dbAll('SELECT endpoint, COUNT(*) as hits FROM analytics GROUP BY endpoint ORDER BY hits DESC LIMIT 5')
+            dbAll('SELECT endpoint, COUNT(*) as hits FROM analytics GROUP BY endpoint ORDER BY hits DESC LIMIT 5'),
+            dbAll('SELECT endpoint, status_code, created_at FROM analytics ORDER BY id DESC LIMIT 8'),
+            dbGet(`SELECT COUNT(*) as total,
+                          SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 1 ELSE 0 END) as success
+                   FROM analytics`)
         ]);
+
+        const activeApis = (apis || []).filter(a => a.is_active === 1).length;
+        const totalReq   = reqStats ? (reqStats.total || 0) : 0;
+        const successReq = reqStats ? (reqStats.success || 0) : 0;
+        const successRate = totalReq > 0 ? ((successReq / totalReq) * 100).toFixed(1) : '100.0';
+
+        const recent = (recentActivity || []).map(r => ({
+            endpoint : '/api/' + r.endpoint,
+            code     : r.status_code,
+            ok       : r.status_code >= 200 && r.status_code < 300,
+            time     : r.created_at
+        }));
+
         res.render('dashboard', {
-            keys       : keys || [],
-            totalHits  : keys.reduce((s, k) => s + (k.hits || 0), 0),
-            active     : keys.filter(k => k.status === 'active').length,
-            apis       : formatApis(apis || []),
+            keys         : keys || [],
+            totalHits    : keys.reduce((s, k) => s + (k.hits || 0), 0),
+            active       : keys.filter(k => k.status === 'active').length,
+            apis         : formatApis(apis || []),
             chartData    : (chartRows || []).reverse(),
             dailyVolume  : (dailyVolume || []).reverse(),
             topEndpoints : topEndpoints || [],
+            recentActivity : recent,
+            health       : {
+                uptime      : Math.floor(process.uptime()),
+                activeApis  : activeApis,
+                totalApis   : (apis || []).length,
+                successRate : successRate,
+                totalReq    : totalReq
+            },
             user       : req.session.user,
             baseUrl    : req.protocol + '://' + req.get('host'),
             settings   : settings || { maintenance_message: 'API is currently under maintenance.' },
@@ -456,39 +481,108 @@ app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
     }
 });
 
-// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+// ─── ANALYTICS PAGE ────────────────────────────────────────────────────────────
 app.get('/admin/analytics', requireAuth, async (req, res) => {
     try {
-        const [allRows, topEndpoints, topIPs, recentLogs, ipEndpointRows, dailyVolume, hourlyDist] = await Promise.all([
-            dbAll('SELECT ip_address, endpoint FROM analytics'),
-            dbAll('SELECT endpoint, COUNT(*) as total FROM analytics GROUP BY endpoint ORDER BY total DESC LIMIT 10'),
-            dbAll('SELECT ip_address, COUNT(*) as hits FROM analytics GROUP BY ip_address ORDER BY hits DESC LIMIT 10'),
-            dbAll('SELECT ip_address, endpoint, status_code, date FROM analytics ORDER BY id DESC LIMIT 100'),
-            dbAll('SELECT ip_address, endpoint, COUNT(*) as hits FROM analytics GROUP BY ip_address, endpoint ORDER BY hits DESC LIMIT 20'),
-            dbAll('SELECT date, COUNT(*) as total FROM analytics GROUP BY date ORDER BY date DESC LIMIT 7'),
-            dbAll("SELECT strftime('%H', created_at) as hour, COUNT(*) as total FROM analytics GROUP BY hour ORDER BY hour")
-        ]);
+        const epCount = await dbGet('SELECT COUNT(*) as c FROM available_apis');
         res.render('analytics', {
-            totals: {
-                total            : allRows.length,
-                unique_ips       : new Set(allRows.map(r => r.ip_address)).size,
-                unique_endpoints : new Set(allRows.map(r => r.endpoint)).size
-            },
-            topEndpoints    : topEndpoints  || [],
-            topIPs          : topIPs        || [],
-            recentLogs      : recentLogs    || [],
-            ipEndpointRows  : ipEndpointRows || [],
-            requestSources  : ipEndpointRows || [],
-            recentRequests  : recentLogs    || [],
-            dailyVolume     : (dailyVolume || []).reverse(),
-            hourlyDist      : hourlyDist    || [],
+            totalEndpoints : epCount ? epCount.c : 0,
             user   : req.session.user,
             owner  : OWNER,
             channel: CHANNEL
         });
     } catch (err) {
-        console.error('Analytics error:', err);
+        console.error('Analytics page error:', err);
         res.status(500).send('Database error: ' + err.message);
+    }
+});
+
+// ─── ANALYTICS DATA (JSON, live-refresh) ───────────────────────────────────────
+app.get('/analytics/data', requireAuth, async (req, res) => {
+    try {
+        const [
+            totalRow, successRow, errorRow, ipRow, latRow,
+            endpointRows, statusRows, recentRows, hourlyRows, epCount
+        ] = await Promise.all([
+            dbGet('SELECT COUNT(*) as c FROM analytics'),
+            dbGet('SELECT COUNT(*) as c FROM analytics WHERE status_code >= 200 AND status_code < 300'),
+            dbGet('SELECT COUNT(*) as c FROM analytics WHERE status_code >= 400'),
+            dbGet('SELECT COUNT(DISTINCT ip_address) as c FROM analytics'),
+            dbGet('SELECT AVG(response_time) as avg FROM analytics WHERE response_time IS NOT NULL'),
+            dbAll(`SELECT endpoint,
+                          COUNT(*) as hits,
+                          SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 1 ELSE 0 END) as success,
+                          SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) as error,
+                          AVG(response_time) as avg_lat,
+                          MIN(response_time) as min_lat,
+                          MAX(response_time) as max_lat
+                   FROM analytics GROUP BY endpoint ORDER BY hits DESC LIMIT 15`),
+            dbAll('SELECT status_code as code, COUNT(*) as count FROM analytics GROUP BY status_code ORDER BY count DESC'),
+            dbAll('SELECT endpoint, status_code, response_time, created_at FROM analytics ORDER BY id DESC LIMIT 30'),
+            dbAll(`SELECT strftime('%H', created_at) as hour,
+                          COUNT(*) as hits,
+                          SUM(CASE WHEN status_code >= 200 AND status_code < 300 THEN 1 ELSE 0 END) as success,
+                          SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) as error
+                   FROM analytics
+                   WHERE created_at >= datetime('now', '-24 hours')
+                   GROUP BY hour ORDER BY hour`),
+            dbGet('SELECT COUNT(*) as c FROM available_apis')
+        ]);
+
+        const totalRequests = totalRow ? totalRow.c : 0;
+        const totalSuccess  = successRow ? successRow.c : 0;
+        const totalError    = errorRow ? errorRow.c : 0;
+        const uniqueIps     = ipRow ? ipRow.c : 0;
+        const avgLatency    = latRow && latRow.avg ? Math.round(latRow.avg) : 0;
+        const errorRate     = totalRequests > 0 ? ((totalError / totalRequests) * 100).toFixed(1) : '0.0';
+
+        // Build 24-hour buckets (fill gaps with zeros)
+        const hourMap = {};
+        (hourlyRows || []).forEach(h => { hourMap[h.hour] = h; });
+        const nowH = new Date().getHours();
+        const hourlyChart = [];
+        for (let i = 23; i >= 0; i--) {
+            const hh = String((nowH - i + 24) % 24).padStart(2, '0');
+            const row = hourMap[hh];
+            hourlyChart.push({
+                label   : hh + ':00',
+                hits    : row ? row.hits : 0,
+                success : row ? row.success : 0,
+                error   : row ? row.error : 0
+            });
+        }
+
+        const topEndpoints = (endpointRows || []).map(ep => ({
+            name         : ep.endpoint,
+            hits         : ep.hits,
+            success      : ep.success,
+            error        : ep.error,
+            avgLatencyMs : ep.avg_lat ? Math.round(ep.avg_lat) : 0,
+            minLatency   : ep.min_lat || 0,
+            maxLatency   : ep.max_lat || 0,
+            errorRate    : ep.hits > 0 ? ((ep.error / ep.hits) * 100).toFixed(1) : '0.0'
+        }));
+
+        const statusDist = (statusRows || []).map(s => ({ code: s.code || 0, count: s.count }));
+
+        const recentRequests = (recentRows || []).map(r => ({
+            time       : r.created_at,
+            endpoint   : '/api/' + r.endpoint,
+            statusCode : r.status_code,
+            latencyMs  : r.response_time || 0,
+            success    : r.status_code >= 200 && r.status_code < 300
+        }));
+
+        res.json({
+            totalRequests, totalSuccess, totalError, errorRate,
+            uniqueIps, avgLatency,
+            uptime         : Math.floor(process.uptime()),
+            totalEndpoints : epCount ? epCount.c : 0,
+            hourlyChart, topEndpoints, statusDist, recentRequests
+        });
+    } catch (err) {
+        console.error('Analytics data error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
