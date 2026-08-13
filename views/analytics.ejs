@@ -1,120 +1,592 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analytics — OSINT API Hub</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-  <style>
-    body{background:#080c14;font-family:'Plus Jakarta Sans',sans-serif;color:#f3f4f6;}
-    .glass{background:rgba(17,24,39,0.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.06);}
-    .cs::-webkit-scrollbar{width:4px;height:4px;}.cs::-webkit-scrollbar-track{background:#080c14;}.cs::-webkit-scrollbar-thumb{background:#1f2937;border-radius:4px;}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — OSINT Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:      #050810;
+  --surface: #090e1c;
+  --panel:   #0d1426;
+  --panel2:  #111a2e;
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.11);
+  --text:    #e2e8f0;
+  --muted:   #64748b;
+  --muted2:  #334155;
+  --cyan:    #22d3ee;
+  --indigo:  #818cf8;
+  --emerald: #34d399;
+  --amber:   #fbbf24;
+  --red:     #f87171;
+  --purple:  #a855f7;
+  --glow:    rgba(34,211,238,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+
+.layout { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 230px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 50;
+}
+.sidebar-logo { padding: 18px 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 11px; }
+.logo-mark {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--cyan), var(--indigo));
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 15px; box-shadow: 0 0 20px rgba(34,211,238,0.3);
+}
+.logo-text { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
+.logo-text span { color: var(--cyan); }
+.logo-owner { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 1px; }
+.sidebar-nav { padding: 12px 10px; flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 12px; border-radius: 9px;
+  font-size: 13px; font-weight: 500; color: var(--muted);
+  text-decoration: none; transition: all 0.15s;
+  margin-bottom: 3px;
+}
+.nav-item:hover { background: var(--panel); color: var(--text); }
+.nav-item.active { background: var(--glow); color: var(--cyan); }
+.nav-item i { width: 16px; text-align: center; font-size: 13px; }
+.sidebar-footer { padding: 14px 20px; border-top: 1px solid var(--border); }
+.user-chip { display: flex; align-items: center; gap: 9px; }
+.user-avatar {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--indigo), var(--cyan));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+}
+.user-name { font-size: 12px; font-weight: 600; color: #cbd5e1; font-family: 'JetBrains Mono', monospace; }
+.logout-link { margin-left: auto; color: var(--muted2); font-size: 13px; transition: color 0.15s; }
+.logout-link:hover { color: var(--red); }
+
+/* ── MAIN ── */
+.main { margin-left: 230px; flex: 1; padding: 24px 28px 48px; }
+
+/* ── TOPBAR ── */
+.topbar { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 26px; gap: 16px; flex-wrap: wrap; }
+.topbar .eyebrow { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 6px; }
+.topbar h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
+.topbar h1 span { color: var(--cyan); }
+.topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.status-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11px; font-weight: 700; color: var(--emerald);
+  background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 999px; padding: 5px 12px; letter-spacing: 0.05em; text-transform: uppercase;
+}
+.status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 8px var(--emerald); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.refresh-timer { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted2); }
+.btn-export {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 13px; border-radius: 8px; cursor: pointer;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--emerald); background: rgba(52,211,153,0.08);
+  border: 1px solid rgba(52,211,153,0.25); transition: all 0.15s;
+}
+.btn-export:hover { background: rgba(52,211,153,0.16); border-color: rgba(52,211,153,0.5); }
+
+/* ── STAT CARDS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 13px; margin-bottom: 18px; }
+.stat-card {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 13px; padding: 17px 18px; position: relative; overflow: hidden;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: var(--border2); }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.stat-card.cyan::before    { background: linear-gradient(90deg, var(--cyan), transparent); }
+.stat-card.emerald::before { background: linear-gradient(90deg, var(--emerald), transparent); }
+.stat-card.red::before     { background: linear-gradient(90deg, var(--red), transparent); }
+.stat-card.purple::before  { background: linear-gradient(90deg, var(--purple), transparent); }
+.stat-card.amber::before   { background: linear-gradient(90deg, var(--amber), transparent); }
+.stat-card.indigo::before  { background: linear-gradient(90deg, var(--indigo), transparent); }
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 9px; font-weight: 600; }
+.stat-value { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
+.sv-cyan{color:var(--cyan)} .sv-emerald{color:var(--emerald)} .sv-red{color:var(--red)}
+.sv-purple{color:var(--purple)} .sv-amber{color:var(--amber)} .sv-white{color:var(--text)}
+.stat-sub { font-size: 10px; color: var(--muted2); margin-top: 6px; }
+
+/* ── PANELS ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-bottom: 13px; }
+.grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 13px; margin-bottom: 13px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.panel-title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 9px; }
+.panel-title i { color: var(--cyan); font-size: 13px; }
+.panel-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); background: var(--panel2); border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px; }
+.panel-body { padding: 18px; }
+.btn-csv {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px;
+  border-radius: 7px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--emerald); background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.22); transition: all 0.15s;
+}
+.btn-csv:hover { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.5); }
+
+.chart-wrap { position: relative; width: 100%; }
+
+/* ── TABLE ── */
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { text-align: left; padding: 9px 14px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
+.tbl td { padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: rgba(255,255,255,0.018); }
+.ep-name { font-family: 'JetBrains Mono', monospace; color: var(--indigo); font-size: 11px; }
+.num { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 12px; }
+.num-cyan{color:var(--cyan)} .num-emerald{color:var(--emerald)} .num-red{color:var(--red)} .num-amber{color:var(--amber)}
+.bar-cell { min-width: 80px; }
+.mini-bar { height: 4px; border-radius: 2px; background: var(--panel2); margin-top: 3px; overflow: hidden; }
+.mini-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--cyan), var(--indigo)); transition: width 0.6s ease; }
+
+/* ── STATUS CODES ── */
+.status-grid { display: flex; flex-direction: column; gap: 9px; }
+.status-row { display: flex; align-items: center; gap: 11px; }
+.status-code { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; width: 42px; flex-shrink: 0; }
+.sc-2xx{color:var(--emerald)} .sc-4xx{color:var(--amber)} .sc-5xx{color:var(--red)} .sc-other{color:var(--muted)}
+.status-bar { flex: 1; height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+.status-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.sc-2xx-fill{background:var(--emerald)} .sc-4xx-fill{background:var(--amber)} .sc-5xx-fill{background:var(--red)} .sc-other-fill{background:var(--muted2)}
+.status-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); min-width: 40px; text-align: right; }
+
+/* ── RECENT LOG ── */
+.log-row { display: flex; align-items: center; gap: 11px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 12px; }
+.log-row:last-child { border-bottom: none; }
+.log-time { font-family: 'JetBrains Mono', monospace; color: var(--muted2); font-size: 10px; white-space: nowrap; }
+.log-ep { font-family: 'JetBrains Mono', monospace; color: var(--indigo); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-status { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.log-ok { color: var(--emerald); background: rgba(52,211,153,0.1); }
+.log-err { color: var(--red); background: rgba(248,113,113,0.1); }
+.log-lat { font-family: 'JetBrains Mono', monospace; color: var(--muted2); font-size: 10px; white-space: nowrap; }
+
+.empty { text-align: center; padding: 40px 16px; color: var(--muted); font-size: 13px; }
+.empty i { font-size: 28px; margin-bottom: 10px; display: block; opacity: 0.3; }
+.loading { opacity: 0.4; animation: pulse-load 1.5s ease-in-out infinite; }
+@keyframes pulse-load { 0%,100%{opacity:0.4} 50%{opacity:0.85} }
+
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 16px; }
+  .grid-2, .grid-3-1 { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+</style>
 </head>
-<body class="min-h-screen cs">
-<%- include('_nav', { currentPage: 'analytics', user: user }) %>
-<main class="pt-20 max-w-[1400px] mx-auto px-4 sm:px-6 pb-12">
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-    <div><h1 class="text-2xl font-extrabold text-white">Analytics</h1><p class="text-sm text-gray-500 mt-0.5">Request volume, endpoint performance & traffic sources</p></div>
-    <span class="text-xs font-mono text-gray-600 bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-xl"><i class="fa-solid fa-clock mr-1.5"></i>Live data</span>
+<body>
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark"><i class="fa-solid fa-satellite-dish"></i></div>
+    <div>
+      <div class="logo-text">OSINT<span>HUB</span></div>
+      <div class="logo-owner"><%= owner %></div>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+    <a class="nav-item" href="/admin/dashboard"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+    <a class="nav-item active" href="/admin/analytics"><i class="fa-solid fa-chart-line"></i> Analytics</a>
+    <a class="nav-item" href="/admin/login-history"><i class="fa-solid fa-clock-rotate-left"></i> Login History</a>
+    <a class="nav-item" href="/endpoints"><i class="fa-solid fa-cubes"></i> Endpoints</a>
+    <a class="nav-item" href="/analytics/data" target="_blank"><i class="fa-solid fa-code"></i> Raw JSON</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-avatar"><%= user.username.charAt(0).toUpperCase() %></div>
+      <span class="user-name"><%= user.username %></span>
+      <a href="/logout" class="logout-link" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></a>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">// gateway telemetry</div>
+      <h1>Analytics <span>Overview</span></h1>
+    </div>
+    <div class="topbar-right">
+      <span class="status-pill">Live</span>
+      <span class="refresh-timer" id="refresh-timer">refresh in 15s</span>
+      <button class="btn-export" id="export-csv" type="button">
+        <i class="fa-solid fa-download"></i> Export
+      </button>
+    </div>
   </div>
 
-  <!-- Stats -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <div class="glass rounded-2xl p-5"><div class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Total Requests</div><div class="text-3xl font-extrabold text-cyan-400 font-mono"><%= totals.total||0 %></div><div class="text-xs text-gray-600 mt-1">All time</div></div>
-    <div class="glass rounded-2xl p-5"><div class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Unique IPs</div><div class="text-3xl font-extrabold text-indigo-400 font-mono"><%= totals.unique_ips||0 %></div><div class="text-xs text-gray-600 mt-1">Distinct callers</div></div>
-    <div class="glass rounded-2xl p-5"><div class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Endpoints Hit</div><div class="text-3xl font-extrabold text-purple-400 font-mono"><%= totals.unique_endpoints||0 %></div><div class="text-xs text-gray-600 mt-1">Distinct routes</div></div>
-    <div class="glass rounded-2xl p-5"><div class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Top Endpoint</div><div class="text-lg font-extrabold text-emerald-400 font-mono truncate"><%= topEndpoints.length>0?topEndpoints[0].endpoint:'—' %></div><div class="text-xs text-gray-600 mt-1"><%= topEndpoints.length>0?topEndpoints[0].total+' hits':'No data' %></div></div>
+  <!-- STAT CARDS -->
+  <div class="stats-grid">
+    <div class="stat-card cyan loading">
+      <div class="stat-label">Total Requests</div>
+      <div class="stat-value sv-cyan" id="s-total">—</div>
+      <div class="stat-sub" id="s-uptime">uptime —</div>
+    </div>
+    <div class="stat-card emerald loading">
+      <div class="stat-label">Successful</div>
+      <div class="stat-value sv-emerald" id="s-success">—</div>
+      <div class="stat-sub" id="s-success-pct">—% success</div>
+    </div>
+    <div class="stat-card red loading">
+      <div class="stat-label">Errors</div>
+      <div class="stat-value sv-red" id="s-error">—</div>
+      <div class="stat-sub" id="s-error-rate">—% error rate</div>
+    </div>
+    <div class="stat-card purple loading">
+      <div class="stat-label">Unique IPs</div>
+      <div class="stat-value sv-purple" id="s-ips">—</div>
+      <div class="stat-sub">distinct callers</div>
+    </div>
+    <div class="stat-card amber loading">
+      <div class="stat-label">Avg Latency</div>
+      <div class="stat-value sv-amber" id="s-latency">—</div>
+      <div class="stat-sub">milliseconds</div>
+    </div>
+    <div class="stat-card indigo loading">
+      <div class="stat-label">Endpoints</div>
+      <div class="stat-value sv-white" id="s-endpoints"><%= totalEndpoints %></div>
+      <div class="stat-sub">registered routes</div>
+    </div>
   </div>
 
-  <!-- Charts row 1 -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-    <div class="glass rounded-2xl p-6"><h3 class="text-sm font-bold text-white mb-1">Daily Request Volume</h3><p class="text-xs text-gray-500 mb-4">Last 14 days</p><div style="height:220px"><canvas id="dailyVolumeChart"></canvas></div></div>
-    <div class="glass rounded-2xl p-6"><h3 class="text-sm font-bold text-white mb-1">Hourly Distribution</h3><p class="text-xs text-gray-500 mb-4">Last 7 days — peak hours</p><div style="height:220px"><canvas id="hourlyChart"></canvas></div></div>
+  <!-- HOURLY CHART -->
+  <div class="panel" style="margin-bottom:13px">
+    <div class="panel-head">
+      <div class="panel-title"><i class="fa-solid fa-chart-column"></i> Requests — Last 24 Hours</div>
+      <span class="panel-badge" id="hourly-total">loading...</span>
+    </div>
+    <div class="panel-body">
+      <div class="chart-wrap" style="height:200px"><canvas id="chart-hourly"></canvas></div>
+    </div>
   </div>
 
-  <!-- Charts row 2 -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-    <div class="glass rounded-2xl p-6"><h3 class="text-sm font-bold text-white mb-1">Top Endpoints</h3><p class="text-xs text-gray-500 mb-4">By total hit count</p><div style="height:220px"><canvas id="topEndpointsChart"></canvas></div></div>
-    <div class="glass rounded-2xl p-6"><h3 class="text-sm font-bold text-white mb-1">Endpoint Share</h3><p class="text-xs text-gray-500 mb-4">Proportion of traffic</p><div style="height:220px" class="flex items-center justify-center"><canvas id="doughnutChart"></canvas></div></div>
-  </div>
-
-  <!-- Top IPs + Sources -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-    <div class="glass rounded-2xl overflow-hidden">
-      <div class="p-5 border-b border-white/5"><h3 class="text-sm font-bold text-white">Top Caller IPs</h3><p class="text-xs text-gray-500 mt-0.5">Highest request volume</p></div>
-      <div class="divide-y divide-white/[0.04]">
-        <%if(topIPs&&topIPs.length>0){topIPs.slice(0,8).forEach(function(row,i){%>
-        <div class="flex items-center justify-between px-5 py-3">
-          <div class="flex items-center gap-3">
-            <span class="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400"><%=i+1%></span>
-            <span class="font-mono text-xs text-cyan-300"><%=row.ip_address%></span>
-          </div>
-          <div class="flex items-center gap-3">
-            <div class="w-24 h-1.5 rounded-full bg-gray-800 overflow-hidden"><div class="h-full rounded-full bg-cyan-500/60" style="width:<%=Math.round((row.hits/topIPs[0].hits)*100)%>%"></div></div>
-            <span class="text-xs font-mono text-gray-400 w-12 text-right"><%=row.hits%></span>
-          </div>
-        </div>
-        <%})}else{%><div class="px-5 py-10 text-center text-xs text-gray-600">No IP data yet</div><%}%>
+  <!-- ENDPOINTS + STATUS -->
+  <div class="grid-3-1">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title"><i class="fa-solid fa-ranking-star"></i> Top Endpoints</div>
+        <button class="btn-csv" id="csv-endpoints" type="button"><i class="fa-solid fa-download"></i> CSV</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead>
+            <tr><th>Endpoint</th><th>Hits</th><th>OK</th><th>Err</th><th>Avg</th><th>Err%</th><th style="min-width:80px">Share</th></tr>
+          </thead>
+          <tbody id="ep-tbody">
+            <tr><td colspan="7" class="empty"><i class="fa-solid fa-inbox"></i>No requests yet</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <div class="glass rounded-2xl overflow-hidden">
-      <div class="p-5 border-b border-white/5"><h3 class="text-sm font-bold text-white">Request Sources</h3><p class="text-xs text-gray-500 mt-0.5">IP + endpoint breakdown</p></div>
-      <div class="overflow-y-auto cs" style="max-height:320px">
-        <%if(requestSources&&requestSources.length>0){requestSources.slice(0,10).forEach(function(row){%>
-        <div class="flex items-center justify-between px-5 py-3 border-b border-white/[0.03]">
-          <div><div class="text-xs font-mono text-gray-300"><%=row.ip_address%></div><div class="text-[10px] text-gray-600 mt-0.5"><span class="text-indigo-400">/<%=row.endpoint%></span></div></div>
-          <span class="text-xs font-mono text-gray-500 bg-gray-800 px-2 py-0.5 rounded"><%=row.hits%>x</span>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title"><i class="fa-solid fa-signal"></i> Status Codes</div></div>
+      <div class="panel-body">
+        <div class="status-grid" id="status-grid">
+          <div class="empty" style="padding:16px 0"><i class="fa-solid fa-inbox"></i>No data</div>
         </div>
-        <%})}else{%><div class="px-5 py-10 text-center text-xs text-gray-600">No source data yet</div><%}%>
       </div>
     </div>
   </div>
 
-  <!-- Recent requests -->
-  <div class="glass rounded-2xl overflow-hidden">
-    <div class="p-5 border-b border-white/5 flex items-center justify-between">
-      <div><h3 class="text-sm font-bold text-white">Recent Requests</h3><p class="text-xs text-gray-500 mt-0.5">Last 50 API calls</p></div>
-      <a href="/admin/analytics" onclick="location.reload()" class="text-xs text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1.5"><i class="fa-solid fa-rotate-right text-[10px]"></i> Refresh</a>
+  <!-- PIE + RECENT -->
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title"><i class="fa-solid fa-chart-pie"></i> Success vs Error</div></div>
+      <div class="panel-body">
+        <div class="chart-wrap" style="height:180px;display:flex;align-items:center;justify-content:center">
+          <canvas id="chart-pie" style="max-width:180px;max-height:180px"></canvas>
+        </div>
+        <div style="display:flex;justify-content:center;gap:24px;margin-top:12px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+            <span style="width:10px;height:10px;border-radius:50%;background:var(--emerald);display:inline-block"></span>
+            Success (<span id="pie-success-pct">—</span>%)
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+            <span style="width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block"></span>
+            Error (<span id="pie-error-pct">—</span>%)
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="overflow-x-auto cs">
-      <table class="w-full text-left text-xs">
-        <thead class="text-[10px] font-mono uppercase tracking-wider text-gray-600 border-b border-white/5 bg-gray-900/30">
-          <tr><th class="py-3 px-4">Endpoint</th><th class="py-3 px-4">API Key</th><th class="py-3 px-4">IP Address</th><th class="py-3 px-4">Status</th><th class="py-3 px-4">Date</th></tr>
-        </thead>
-        <tbody class="divide-y divide-white/[0.03]">
-          <%if(recentRequests&&recentRequests.length>0){recentRequests.forEach(function(r){%>
-          <tr class="hover:bg-white/[0.02] transition">
-            <td class="py-2.5 px-4 font-mono text-indigo-400">/<%=r.endpoint%></td>
-            <td class="py-2.5 px-4 font-mono text-gray-500 text-[11px]"><%=r.api_key?r.api_key.substring(0,12)+'...':'—'%></td>
-            <td class="py-2.5 px-4 font-mono text-cyan-400/80"><%=r.ip_address%></td>
-            <td class="py-2.5 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold <%=r.status_code===200?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'bg-red-500/10 text-red-400 border border-red-500/20'%>"><%=r.status_code%></span></td>
-            <td class="py-2.5 px-4 text-gray-600 font-mono text-[10px]"><%=r.date%></td>
-          </tr>
-          <%})}else{%><tr><td colspan="5" class="py-12 text-center text-gray-600">No requests logged yet</td></tr><%}%>
-        </tbody>
-      </table>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title"><i class="fa-solid fa-list-ul"></i> Recent Requests</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-csv" id="csv-recent" type="button"><i class="fa-solid fa-download"></i> CSV</button>
+          <span class="panel-badge" id="recent-count">0</span>
+        </div>
+      </div>
+      <div class="panel-body" style="padding:0 18px">
+        <div id="recent-log">
+          <div class="empty" style="padding:32px 0"><i class="fa-solid fa-inbox"></i>No recent requests</div>
+        </div>
+      </div>
     </div>
   </div>
+
 </main>
+</div>
+
 <script>
-const COLORS=['#06b6d4','#6366f1','#10b981','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6','#3b82f6','#f97316'];
-const dailyData=<%- JSON.stringify(dailyVolume||[]) %>;
-const hourlyData=<%- JSON.stringify(hourlyDist||[]) %>;
-const epData=<%- JSON.stringify(topEndpoints||[]) %>;
+(function() {
+  'use strict';
+  var hourlyChart = null, pieChart = null, countdown = 15, timer = null, _lastSnapshot = null;
 
-new Chart(document.getElementById('dailyVolumeChart'),{type:'line',data:{labels:dailyData.map(d=>d.date),datasets:[{label:'Requests',data:dailyData.map(d=>d.total),borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,0.07)',tension:0.4,fill:true,pointRadius:4,pointBackgroundColor:'#06b6d4',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+  Chart.defaults.color = '#64748b';
+  Chart.defaults.font.family = "'JetBrains Mono', monospace";
+  Chart.defaults.font.size = 10;
 
-const allHours=Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
-const hourMap={};hourlyData.forEach(h=>{hourMap[h.hour]=h.hits;});
-new Chart(document.getElementById('hourlyChart'),{type:'bar',data:{labels:allHours.map(h=>h+':00'),datasets:[{label:'Hits',data:allHours.map(h=>hourMap[h]||0),backgroundColor:'rgba(99,102,241,0.6)',borderRadius:4,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxRotation:0},grid:{color:'rgba(255,255,255,0.02)'}},y:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+  var C = { emerald:'#34d399', red:'#f87171', cyan:'#22d3ee', indigo:'#818cf8', amber:'#fbbf24', muted:'rgba(255,255,255,0.04)' };
 
-new Chart(document.getElementById('topEndpointsChart'),{type:'bar',data:{labels:epData.map(d=>d.endpoint),datasets:[{label:'Hits',data:epData.map(d=>d.total),backgroundColor:COLORS.slice(0,epData.length),borderRadius:6,borderWidth:0}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#9ca3af',font:{size:10}},grid:{display:false}}}}});
+  function initHourlyChart() {
+    var ctx = document.getElementById('chart-hourly').getContext('2d');
+    hourlyChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: [], datasets: [
+        { label: 'Success', data: [], backgroundColor: 'rgba(52,211,153,0.6)', borderColor: C.emerald, borderWidth: 1, borderRadius: 3, borderSkipped: false },
+        { label: 'Error', data: [], backgroundColor: 'rgba(248,113,113,0.5)', borderColor: C.red, borderWidth: 1, borderRadius: 3, borderSkipped: false }
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 8, boxHeight: 8, padding: 12, pointStyle: 'circle', usePointStyle: true } },
+          tooltip: { mode: 'index', intersect: false, backgroundColor: '#0d1426', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1, callbacks: { title: function(items){ return 'Hour: ' + items[0].label; } } }
+        },
+        scales: {
+          x: { stacked: true, grid: { color: C.muted, drawTicks: false }, border: { display: false }, ticks: { maxRotation: 0, maxTicksLimit: 12 } },
+          y: { stacked: true, beginAtZero: true, grid: { color: C.muted, drawTicks: false }, border: { display: false }, ticks: { precision: 0 } }
+        }
+      }
+    });
+  }
 
-new Chart(document.getElementById('doughnutChart'),{type:'doughnut',data:{labels:epData.map(d=>d.endpoint),datasets:[{data:epData.map(d=>d.total),backgroundColor:COLORS.slice(0,epData.length),borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:'#9ca3af',font:{size:10},boxWidth:10,padding:8}}},cutout:'65%'}});
+  function initPieChart() {
+    var ctx = document.getElementById('chart-pie').getContext('2d');
+    pieChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: ['Success','Error'], datasets: [{ data: [0,0], backgroundColor: [C.emerald, C.red], borderColor: '#0d1426', borderWidth: 3, hoverOffset: 4 }] },
+      options: { responsive: true, maintainAspectRatio: true, cutout: '68%', plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0d1426', borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1 } } }
+    });
+  }
+
+  function fmt(n) {
+    if (n === undefined || n === null) return '—';
+    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+    return String(n);
+  }
+  function fmtUptime(s) {
+    if (!s) return 'uptime —';
+    var h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    if (h > 0) return h + 'h ' + m + 'm uptime';
+    if (m > 0) return m + 'm ' + sec + 's uptime';
+    return sec + 's uptime';
+  }
+  function fmtTime(iso) {
+    try { return new Date(iso).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+    catch(e) { return iso; }
+  }
+  function scClass(code) {
+    var c = parseInt(code, 10);
+    if (c >= 200 && c < 300) return '2xx';
+    if (c >= 400 && c < 500) return '4xx';
+    if (c >= 500) return '5xx';
+    return 'other';
+  }
+
+  function update(d) {
+    document.querySelectorAll('.loading').forEach(function(el){ el.classList.remove('loading'); });
+    document.getElementById('s-total').textContent = fmt(d.totalRequests);
+    document.getElementById('s-uptime').textContent = fmtUptime(d.uptime);
+    document.getElementById('s-success').textContent = fmt(d.totalSuccess);
+    document.getElementById('s-success-pct').textContent = (d.totalRequests > 0 ? ((d.totalSuccess/d.totalRequests)*100).toFixed(1) : '0.0') + '% success';
+    document.getElementById('s-error').textContent = fmt(d.totalError);
+    document.getElementById('s-error-rate').textContent = d.errorRate + '% error rate';
+    document.getElementById('s-ips').textContent = fmt(d.uniqueIps);
+    document.getElementById('s-latency').textContent = d.avgLatency + 'ms';
+
+    if (d.hourlyChart && hourlyChart) {
+      hourlyChart.data.labels = d.hourlyChart.map(function(b){ return b.label; });
+      hourlyChart.data.datasets[0].data = d.hourlyChart.map(function(b){ return b.success; });
+      hourlyChart.data.datasets[1].data = d.hourlyChart.map(function(b){ return b.error; });
+      hourlyChart.update('none');
+      var htotal = d.hourlyChart.reduce(function(s,b){ return s+b.hits; }, 0);
+      document.getElementById('hourly-total').textContent = fmt(htotal) + ' reqs / 24h';
+    }
+
+    if (pieChart) {
+      pieChart.data.datasets[0].data = [d.totalSuccess || 0, d.totalError || 0];
+      pieChart.update('none');
+    }
+    document.getElementById('pie-success-pct').textContent = d.totalRequests > 0 ? ((d.totalSuccess/d.totalRequests)*100).toFixed(1) : '0.0';
+    document.getElementById('pie-error-pct').textContent = d.totalRequests > 0 ? ((d.totalError/d.totalRequests)*100).toFixed(1) : '0.0';
+
+    var tbody = document.getElementById('ep-tbody');
+    var maxHits = d.topEndpoints.length > 0 ? d.topEndpoints[0].hits : 1;
+    if (!d.topEndpoints || d.topEndpoints.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty"><i class="fa-solid fa-inbox"></i>No endpoint hits yet</td></tr>';
+    } else {
+      tbody.innerHTML = d.topEndpoints.map(function(ep) {
+        var pct = maxHits > 0 ? Math.round((ep.hits/maxHits)*100) : 0;
+        var errPct = parseFloat(ep.errorRate);
+        var errClass = errPct > 20 ? 'num-red' : errPct > 5 ? 'num-amber' : 'num-emerald';
+        return '<tr>' +
+          '<td><span class="ep-name">/api/' + ep.name + '</span></td>' +
+          '<td><span class="num num-cyan">' + fmt(ep.hits) + '</span></td>' +
+          '<td><span class="num num-emerald">' + fmt(ep.success) + '</span></td>' +
+          '<td><span class="num num-red">' + fmt(ep.error) + '</span></td>' +
+          '<td><span class="num num-amber">' + ep.avgLatencyMs + '</span></td>' +
+          '<td><span class="num ' + errClass + '">' + ep.errorRate + '%</span></td>' +
+          '<td class="bar-cell"><div class="mini-bar"><div class="mini-bar-fill" style="width:' + pct + '%"></div></div></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    var sgrid = document.getElementById('status-grid');
+    if (!d.statusDist || d.statusDist.length === 0) {
+      sgrid.innerHTML = '<div class="empty" style="padding:16px 0"><i class="fa-solid fa-inbox"></i>No data</div>';
+    } else {
+      var maxCount = d.statusDist[0].count;
+      sgrid.innerHTML = d.statusDist.map(function(s) {
+        var cls = scClass(s.code);
+        var pct = maxCount > 0 ? Math.round((s.count/maxCount)*100) : 0;
+        return '<div class="status-row">' +
+          '<span class="status-code sc-' + cls + '">' + s.code + '</span>' +
+          '<div class="status-bar"><div class="status-bar-fill sc-' + cls + '-fill" style="width:' + pct + '%"></div></div>' +
+          '<span class="status-count">' + fmt(s.count) + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    var rlog = document.getElementById('recent-log');
+    document.getElementById('recent-count').textContent = d.recentRequests.length;
+    if (!d.recentRequests || d.recentRequests.length === 0) {
+      rlog.innerHTML = '<div class="empty" style="padding:32px 0"><i class="fa-solid fa-inbox"></i>No recent requests</div>';
+    } else {
+      rlog.innerHTML = d.recentRequests.map(function(r) {
+        var statusClass = r.success ? 'log-ok' : 'log-err';
+        var statusText = r.statusCode || (r.success ? '200' : 'ERR');
+        return '<div class="log-row">' +
+          '<span class="log-time">' + fmtTime(r.time) + '</span>' +
+          '<span class="log-ep">' + r.endpoint + '</span>' +
+          '<span class="log-status ' + statusClass + '">' + statusText + '</span>' +
+          '<span class="log-lat">' + r.latencyMs + 'ms</span>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  function fetchData() {
+    fetch('/analytics/data').then(function(r){ return r.json(); }).then(function(d) {
+      _lastSnapshot = d;
+      update(d);
+    }).catch(function(e){ console.warn('Analytics fetch:', e.message); });
+  }
+
+  function startCountdown() {
+    countdown = 15;
+    clearInterval(timer);
+    timer = setInterval(function() {
+      countdown--;
+      document.getElementById('refresh-timer').textContent = 'refresh in ' + countdown + 's';
+      if (countdown <= 0) { countdown = 15; fetchData(); }
+    }, 1000);
+  }
+
+  // ── CSV EXPORT ──
+  function toCSV(headers, rows) {
+    var lines = [headers.join(',')];
+    rows.forEach(function(row) {
+      lines.push(row.map(function(cell) {
+        var s = String(cell == null ? '' : cell);
+        if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) s = '"' + s.replace(/"/g, '""') + '"';
+        return s;
+      }).join(','));
+    });
+    return lines.join('\n');
+  }
+  function downloadCSV(filename, csvStr) {
+    var blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  }
+  function exportEndpointsCSV(d) {
+    if (!d || !d.topEndpoints || !d.topEndpoints.length) return;
+    var rows = d.topEndpoints.map(function(ep){ return [ep.name, ep.hits, ep.success, ep.error, ep.avgLatencyMs, ep.minLatency, ep.maxLatency, ep.errorRate]; });
+    downloadCSV('endpoints-' + new Date().toISOString().slice(0,10) + '.csv', toCSV(['Endpoint','Hits','Success','Errors','Avg_ms','Min_ms','Max_ms','Error_pct'], rows));
+  }
+  function exportRecentCSV(d) {
+    if (!d || !d.recentRequests || !d.recentRequests.length) return;
+    var rows = d.recentRequests.map(function(r){ return [r.time, r.endpoint, r.statusCode, r.latencyMs, r.success]; });
+    downloadCSV('recent-' + new Date().toISOString().slice(0,10) + '.csv', toCSV(['Time','Endpoint','StatusCode','Latency_ms','Success'], rows));
+  }
+  function exportFullCSV(d) {
+    if (!d) return;
+    var csv = '# Summary\n' + toCSV(['Metric','Value'], [
+      ['total_requests', d.totalRequests], ['total_success', d.totalSuccess], ['total_errors', d.totalError],
+      ['error_rate_pct', d.errorRate], ['unique_ips', d.uniqueIps], ['avg_latency_ms', d.avgLatency],
+      ['uptime_seconds', d.uptime], ['exported_at', new Date().toISOString()]
+    ]);
+    if (d.topEndpoints && d.topEndpoints.length) {
+      var epRows = d.topEndpoints.map(function(ep){ return [ep.name, ep.hits, ep.success, ep.error, ep.avgLatencyMs, ep.minLatency, ep.maxLatency, ep.errorRate]; });
+      csv += '\n\n# Endpoints\n' + toCSV(['Endpoint','Hits','Success','Errors','Avg_ms','Min_ms','Max_ms','Error_pct'], epRows);
+    }
+    if (d.hourlyChart && d.hourlyChart.length) {
+      var hrRows = d.hourlyChart.map(function(b){ return [b.label, b.hits, b.success, b.error]; });
+      csv += '\n\n# Hourly (24h)\n' + toCSV(['Hour','Hits','Success','Errors'], hrRows);
+    }
+    if (d.statusDist && d.statusDist.length) {
+      var scRows = d.statusDist.map(function(s){ return [s.code, s.count]; });
+      csv += '\n\n# Status Codes\n' + toCSV(['Status_Code','Count'], scRows);
+    }
+    downloadCSV('analytics-full-' + new Date().toISOString().slice(0,10) + '.csv', csv);
+  }
+
+  var btnFull = document.getElementById('export-csv');
+  var btnEp = document.getElementById('csv-endpoints');
+  var btnRec = document.getElementById('csv-recent');
+  if (btnFull) btnFull.addEventListener('click', function(){ if(_lastSnapshot) exportFullCSV(_lastSnapshot); else fetch('/analytics/data').then(function(r){return r.json();}).then(exportFullCSV); });
+  if (btnEp) btnEp.addEventListener('click', function(){ if(_lastSnapshot) exportEndpointsCSV(_lastSnapshot); else fetch('/analytics/data').then(function(r){return r.json();}).then(exportEndpointsCSV); });
+  if (btnRec) btnRec.addEventListener('click', function(){ if(_lastSnapshot) exportRecentCSV(_lastSnapshot); else fetch('/analytics/data').then(function(r){return r.json();}).then(exportRecentCSV); });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    initHourlyChart();
+    initPieChart();
+    fetchData();
+    startCountdown();
+  });
+})();
 </script>
 </body>
 </html>
