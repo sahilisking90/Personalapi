@@ -143,7 +143,7 @@ db.serialize(() => {
                 ['leakpro',      '🔓 Leak Pro',           '/api/leakpro',      '{"number":""}',   '{"number":"919876543210"}', 'LEAK pro information'],
                 ['vehicle-info', '🚗 Vehicle Info',        '/api/vehicle-info', '{"vehicle":""}',  '{"vehicle":"UP42BB2572"}',  'Vehicle challan/info'],
                 ['telegram-num', '📞 Telegram to Number',  '/api/telegram-num', '{"term":""}',     '{"term":"7577179320"}',     'Number from Telegram ID'],
-                ['family-info',  '👨‍👩‍👧‍👦 Family Info',       '/api/family-info',  '{"q":""}',        '{"q":"123456789012"}',      'Family information lookup'],
+                ['aadhr',        '👨‍👩‍👧‍👦 aadhr Info',       '/api/aadhr',  '{"q":""}',        '{"q":"123456789012"}',      'aadhr information lookup'],
                 ['number-info',  '📱 Number Info',         '/api/number-info',  '{"q":""}',        '{"q":"9876543321"}',        'Complete number information'],
                 ['num-newinfo',  '🔍 Number New Info',     '/api/num-newinfo',  '{"q":""}',        '{"q":"1234597890"}',        'Advanced number information'],
                 ['email-info',   '📧 Email Info',          '/api/email-info',   '{"q":""}',        '{"q":"test@email.com"}',    'Email address information'],
@@ -224,11 +224,11 @@ const formatApis = (apis) => apis.map(api => {
 
 // ─── API PROXY MAP ────────────────────────────────────────────────────────────
 const apiProxyMap = {
-    'leakpro':      p => `https://raxxosint.onrender.com/leakosint?key=Customer&quiry=${getParam(p,'number','query','q','num','quiry','term')}`,
-    'vehicle-info': p => `https://leakapi.dpdns.org/vehicle-info?registration_number=${getParam(p,'vehicle','registration_number','q','term','query')}`,
+    'leakpro':      p => `https://backend-dqcg.onrender.com/api/leak?query=${getParam(p,'number','query','q','num','quiry','term')}`,
+    'vehicle-info': p => `https://backend-dqcg.onrender.com/api/veh?vehicle=${getParam(p,'vehicle','registration_number','q','term','query')}`,
     'telegram-num': p => `https://tg-to-num-ten.vercel.app/tg?key=sahil_X&num=${getParam(p,'term','id','username','num','query','q')}`,
-    'family-info':  p => `https://osint.invalidayushh.workers.dev/adhar?key=Sahil&q=${getParam(p,'q','term','id','query','number')}`,
-    'number-info':  p => `https://osint.invalidayushh.workers.dev/num?key=Sahil&q=${getParam(p,'q','number','num','query','term')}`,
+    'aadhr':  p => `https://backend-dqcg.onrender.com/api/adhar?adhar=${getParam(p,'q','term','id','query','number')}`,
+    'number-info':  p => `https://backend-dqcg.onrender.com/api/num?number=${getParam(p,'q','number','num','query','term')}`,
     'num-newinfo':  p => `https://leakapi.dpdns.org/search?q=${getParam(p,'q','number','num','query','term')}`,
     'email-info':   p => `https://osint.invalidayushh.workers.dev/email?key=Sahil&q=${getParam(p,'q','email','query')}`,
     'insta':        p => `https://osint.invalidayushh.workers.dev/insta?key=Sahil&q=${getParam(p,'username','q','query')}`,
@@ -238,15 +238,15 @@ const apiProxyMap = {
     'num-pak':      p => `https://ft-osint-api.duckdns.org/api/pk?key=${MASTER_KEYS.ftosint}&number=${getParam(p,'number','num','q','query')}`,
     'bank':         p => `https://ft-osint-api.duckdns.org/api/ifsc?key=${MASTER_KEYS.ftosint}&ifsc=${getParam(p,'ifsc','q','query')}`,
     'pan':          p => `https://ft-osint-api.duckdns.org/api/pan?key=${MASTER_KEYS.ftosint}&pan=${getParam(p,'pan','q','query')}`,
-    'rc':           p => `https://leakapi.dpdns.org/rc?registration_number=${getParam(p,'owner','vehicle','q','query')}`,
-    'ip':           p => `https://ft-osint-api.duckdns.org/api/ip?key=${MASTER_KEYS.ftosint}&ip=${getParam(p,'ip','q','query')}`,
-    'pincode':      p => `https://ft-osint-api.duckdns.org/api/pincode?key=${MASTER_KEYS.ftosint}&pin=${getParam(p,'pin','q','query')}`,
+    'rc':           p => `https://backend-dqcg.onrender.com/api/rc?vehicle=${getParam(p,'owner','vehicle','q','query')}`,
+    'ip':           p => `https://backend-dqcg.onrender.com/api/ip?ip=${getParam(p,'ip','q','query')}`,
+    'pincode':      p => `https://backend-dqcg.onrender.com/api/pin?pincode=${getParam(p,'pin','q','query')}`,
     'git':          p => `https://ft-osint-api.duckdns.org/api/git?key=${MASTER_KEYS.ftosint}&username=${getParam(p,'username','q','query')}`,
     'bgmi':         p => `https://ft-osint-api.duckdns.org/api/bgmi?key=${MASTER_KEYS.ftosint}&uid=${getParam(p,'uid','q','query')}`,
     'ff':           p => `https://ft-osint-api.duckdns.org/api/ff?key=${MASTER_KEYS.ftosint}&uid=${getParam(p,'uid','q','query')}`,
     'ai-image':     p => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${getParam(p,'prompt','q','query')}`,
-    'leak':         p => `https://leakapi.dpdns.org/chain?q=${getParam(p,'number','query','q','num','term')}`,
-    'veh-to-num':   p => `https://vehicleinfo.noobgamingv40.workers.dev/fetch?vehicle=${getParam(p,'vehicle','term','q','query')}`,
+    'leak':         p => `https://backend-dqcg.onrender.com/api/chain?number=${getParam(p,'number','query','q','num','term')}`,
+    'veh-to-num':   p => `https://backend-dqcg.onrender.com/api/veh-info?vehicle=${getParam(p,'vehicle','term','q','query')}`,
     'mistral': async (p, res, keyData, rateLimitInfo) => {
         const message = decodeURIComponent(getParam(p, 'message', 'q', 'query', 'prompt'));
         if (!message) return res.status(400).json({ error: 'message param required', contact: OWNER });
