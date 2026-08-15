@@ -14,10 +14,9 @@ const app = express();
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const OWNER   = '@sahilxalone';
 const CHANNEL = '@OSINTNXERA';
+const NEW_BASE = 'https://sahilcc.dpdns.org';
 const MASTER_KEYS = {
-    ftosint  : 'sahil-new',
     mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
-    subhxco  : 'subh-key',
     ayaanmods: 'ayaan-key'
 };
 
@@ -27,7 +26,6 @@ if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const db = new sqlite3.Database(path.join(dataDir, 'api_keys.db'));
 
-// Promisified helpers — used everywhere instead of callbacks
 const dbGet = (sql, p = []) => new Promise((ok, fail) => db.get(sql, p, (e, r) => e ? fail(e) : ok(r)));
 const dbAll = (sql, p = []) => new Promise((ok, fail) => db.all(sql, p, (e, r) => e ? fail(e) : ok(r)));
 const dbRun = (sql, p = []) => new Promise((ok, fail) => db.run(sql, p, function(e) { e ? fail(e) : ok(this); }));
@@ -44,25 +42,25 @@ db.serialize(() => {
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS api_keys (
-        id                   INTEGER PRIMARY KEY AUTOINCREMENT,
-        key                  TEXT UNIQUE,
-        name                 TEXT,
-        owner_username       TEXT,
-        owner_channel        TEXT,
-        created_at           DATETIME DEFAULT CURRENT_TIMESTAMP,
-        expires_at           DATETIME,
-        hits                 INTEGER DEFAULT 0,
-        status               TEXT DEFAULT 'active',
-        unlimited_hits       INTEGER DEFAULT 0,
-        allowed_apis         TEXT DEFAULT '["all"]',
-        is_custom            INTEGER DEFAULT 0,
-        rate_limit_enabled   INTEGER DEFAULT 1,
-        rate_limit_per_day   INTEGER DEFAULT 100,
+        id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+        key                   TEXT UNIQUE,
+        name                  TEXT,
+        owner_username        TEXT,
+        owner_channel         TEXT,
+        created_at            DATETIME DEFAULT CURRENT_TIMESTAMP,
+        expires_at            DATETIME,
+        hits                  INTEGER DEFAULT 0,
+        status                TEXT DEFAULT 'active',
+        unlimited_hits        INTEGER DEFAULT 0,
+        allowed_apis          TEXT DEFAULT '["all"]',
+        is_custom             INTEGER DEFAULT 0,
+        rate_limit_enabled    INTEGER DEFAULT 1,
+        rate_limit_per_day    INTEGER DEFAULT 100,
         rate_limit_per_minute INTEGER DEFAULT 5,
-        key_note             TEXT DEFAULT '',
-        note_enabled         INTEGER DEFAULT 0,
-        last_updated         DATETIME,
-        api_enabled          INTEGER DEFAULT 1
+        key_note              TEXT DEFAULT '',
+        note_enabled          INTEGER DEFAULT 0,
+        last_updated          DATETIME,
+        api_enabled           INTEGER DEFAULT 1
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS rate_limit_tracking (
@@ -94,15 +92,15 @@ db.serialize(() => {
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS available_apis (
-        id             INTEGER PRIMARY KEY AUTOINCREMENT,
-        name           TEXT,
-        display_name   TEXT,
-        endpoint       TEXT,
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        name             TEXT,
+        display_name     TEXT,
+        endpoint         TEXT,
         required_params  TEXT,
         example_params   TEXT,
-        description    TEXT,
-        is_active      INTEGER DEFAULT 1,
-        custom_message TEXT DEFAULT 'API is currently turned off.'
+        description      TEXT,
+        is_active        INTEGER DEFAULT 1,
+        custom_message   TEXT DEFAULT 'API is currently turned off.'
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS login_history (
@@ -120,7 +118,7 @@ db.serialize(() => {
         maintenance_message TEXT DEFAULT 'API is currently under maintenance.'
     )`);
 
-    // Safe migrations — errors silently ignored (column already exists)
+    // Safe migrations
     db.run(`ALTER TABLE available_apis ADD COLUMN custom_message TEXT DEFAULT 'API is currently turned off.'`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN response_time INTEGER`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`, () => {});
@@ -137,35 +135,45 @@ db.serialize(() => {
         if (!r) db.run(`INSERT INTO users (username,password,role,created_by) VALUES (?,?,?,?)`,
             ['sahil', bcrypt.hashSync('sexy', 10), 'admin', 'main']);
     });
+
     db.get(`SELECT COUNT(*) as c FROM available_apis`, [], (e, r) => {
         if (r && r.c === 0) {
             const APIs = [
-                ['leakpro',      '🔓 Leak Pro',           '/api/leakpro',      '{"number":""}',   '{"number":"919876543210"}', 'LEAK pro information'],
-                ['vehicle-info', '🚗 Vehicle Info',        '/api/vehicle-info', '{"vehicle":""}',  '{"vehicle":"UP42BB2572"}',  'Vehicle challan/info'],
-                ['telegram-num', '📞 Telegram to Number',  '/api/telegram-num', '{"term":""}',     '{"term":"7577179320"}',     'Number from Telegram ID'],
-                ['aadhr',        '👨‍👩‍👧‍👦 aadhr Info',       '/api/aadhr',  '{"q":""}',        '{"q":"123456789012"}',      'aadhr information lookup'],
-                ['number-info',  '📱 Number Info',         '/api/number-info',  '{"q":""}',        '{"q":"9876543321"}',        'Complete number information'],
-                ['num-newinfo',  '🔍 Number New Info',     '/api/num-newinfo',  '{"q":""}',        '{"q":"1234597890"}',        'Advanced number information'],
-                ['email-info',   '📧 Email Info',          '/api/email-info',   '{"q":""}',        '{"q":"test@email.com"}',    'Email address information'],
-                ['family',       '👨‍👩‍👧‍👦 Family Tree',        '/api/family',       '{"term":""}',     '{"term":"979607168114"}',   'Family relationship lookup'],
-                ['num-india',    '🇮🇳 Indian Number',       '/api/num-india',    '{"num":""}',      '{"num":"9876543210"}',      'Indian mobile number details'],
-                ['num-pak',      '🇵🇰 Pakistani Number',    '/api/num-pak',      '{"number":""}',   '{"number":"03001234567"}',  'Pakistani mobile number'],
-                ['bank',         '🏦 Bank IFSC',           '/api/bank',         '{"ifsc":""}',     '{"ifsc":"SBIN0001234"}',    'Bank branch details'],
-                ['pan',          '📄 PAN Card',            '/api/pan',          '{"pan":""}',      '{"pan":"AXDPR2606K"}',      'PAN card details'],
-                ['rc',           '📋 RC Details',          '/api/rc',           '{"owner":""}',    '{"owner":"HR26EV0001"}',    'Registration certificate'],
-                ['ip',           '🌐 IP Geolocation',      '/api/ip',           '{"ip":""}',       '{"ip":"8.8.8.8"}',          'IP address location'],
-                ['pincode',      '📍 Pincode Info',        '/api/pincode',      '{"pin":""}',      '{"pin":"110001"}',          'Area details from pincode'],
-                ['git',          '🐙 GitHub User',         '/api/git',          '{"username":""}', '{"username":"octocat"}',    'GitHub profile info'],
-                ['bgmi',         '🎮 BGMI Player',         '/api/bgmi',         '{"uid":""}',      '{"uid":"5121439477"}',      'BGMI player stats'],
-                ['ff',           '🔫 FreeFire ID',         '/api/ff',           '{"uid":""}',      '{"uid":"123456789"}',       'FreeFire player info'],
-                ['ai-image',     '🎨 AI Image Gen',        '/api/ai-image',     '{"prompt":""}',   '{"prompt":"cyberpunk cat"}','Generate AI images'],
-                ['insta',        '📸 Instagram Info',      '/api/insta',        '{"username":""}', '{"username":"instagram"}',  'Instagram profile'],
-                ['leak',         '🔍 Leak Info',           '/api/leak',         '{"number":""}',   '{"number":"919876543210"}', 'Complete phone info'],
-                ['mistral',      '🤖 Mistral AI',          '/api/mistral',      '{"message":""}',  '{"message":"What is AI?"}', 'Chat with Mistral AI'],
-                ['veh-to-num',   '🚗 Vehicle to Number',   '/api/veh-to-num',   '{"term":""}',     '{"term":"UP50P5434"}',      'Vehicle to mobile number']
+                // ── Phone / Number ────────────────────────────────────────────
+                ['tg',           '📞 TG to Number',       '/api/tg',           '{"number":""}',  '{"number":"9876543210"}',   'Telegram number lookup'],
+                ['num',          '📱 Number Info',         '/api/num',          '{"number":""}',  '{"number":"9876543210"}',   'Complete number information'],
+                ['num2',         '🔍 Number Info v2',      '/api/num2',         '{"number":""}',  '{"number":"9876543210"}',   'Advanced number information'],
+                ['num-india',    '🇮🇳 Indian Number',       '/api/num-india',    '{"number":""}',  '{"number":"9876543210"}',   'Indian mobile number details'],
+                ['num-pak',      '🇵🇰 Pakistani Number',    '/api/num-pak',      '{"number":""}',  '{"number":"03001234567"}',  'Pakistani mobile number'],
+                ['chain',        '🔗 Chain Lookup',        '/api/chain',        '{"number":""}',  '{"number":"9876543210"}',   'Chained number info'],
+                ['bom',          '💥 BOM Lookup',          '/api/bom',          '{"number":""}',  '{"number":"9876543210"}',   'BOM number lookup'],
+                // ── Identity ──────────────────────────────────────────────────
+                ['aadhr',        '🪪 Aadhaar Info',        '/api/aadhr',        '{"q":""}',       '{"q":"123456789012"}',      'Aadhaar information lookup'],
+                ['pan',          '📄 PAN Card',            '/api/pan',          '{"pan":""}',     '{"pan":"ABCDE1234F"}',      'PAN card details'],
+                ['family',       '👨‍👩‍👧‍👦 Family Tree',        '/api/family',       '{"term":""}',    '{"term":"123456789012"}',   'Family relationship lookup'],
+                ['email-info',   '📧 Email Info',          '/api/email-info',   '{"q":""}',       '{"q":"test@example.com"}',  'Email address information'],
+                // ── Vehicle ───────────────────────────────────────────────────
+                ['veh-to-num',   '🚗 Vehicle to Number',   '/api/veh-to-num',   '{"term":""}',    '{"term":"DL01AB1234"}',     'Vehicle registration to owner number'],
+                ['vehicle-info', '🚘 Vehicle Info',         '/api/vehicle-info', '{"vehicle":""}', '{"vehicle":"DL01AB1234"}',  'Vehicle challan/info'],
+                ['rc',           '📋 RC Details',          '/api/rc',           '{"owner":""}',   '{"owner":"DL01AB1234"}',    'Registration certificate details'],
+                // ── Social / Gaming ───────────────────────────────────────────
+                ['insta',        '📸 Instagram Info',      '/api/insta',        '{"username":""}','{"username":"instagram"}',  'Instagram profile'],
+                ['snap',         '👻 Snapchat Info',       '/api/snap',         '{"username":""}','{"username":"john_doe"}',   'Snapchat profile lookup'],
+                ['git',          '🐙 GitHub User',         '/api/git',          '{"username":""}','{"username":"octocat"}',    'GitHub profile info'],
+                ['bgmi',         '🎮 BGMI Player',         '/api/bgmi',         '{"uid":""}',     '{"uid":"5121439477"}',      'BGMI player stats'],
+                ['ff',           '🔫 FreeFire ID',         '/api/ff',           '{"uid":""}',     '{"uid":"123456789"}',       'FreeFire player info'],
+                // ── Tech / Other ──────────────────────────────────────────────
+                ['ip',           '🌐 IP Geolocation',      '/api/ip',           '{"ip":""}',      '{"ip":"8.8.8.8"}',          'IP address location'],
+                ['bank',         '🏦 Bank IFSC',           '/api/bank',         '{"ifsc":""}',    '{"ifsc":"SBIN0001234"}',    'Bank branch details'],
+                ['pincode',      '📍 Pincode Info',        '/api/pincode',      '{"pin":""}',     '{"pin":"110001"}',          'Area details from pincode'],
+                ['leak',         '🔍 Leak Info',           '/api/leak',         '{"number":""}',  '{"number":"9876543210"}',   'Breach/leak database search'],
+                ['leakpro',      '🔓 Leak Pro',            '/api/leakpro',      '{"number":""}',  '{"number":"919876543210"}', 'LEAK pro information'],
+                ['ai-image',     '🎨 AI Image Gen',        '/api/ai-image',     '{"prompt":""}',  '{"prompt":"cyberpunk cat"}','Generate AI images'],
+                ['mistral',      '🤖 Mistral AI',          '/api/mistral',      '{"message":""}', '{"message":"What is AI?"}', 'Chat with Mistral AI'],
             ];
             APIs.forEach(a => db.run(
-                `INSERT INTO available_apis (name,display_name,endpoint,required_params,example_params,description,is_active,custom_message)
+                `INSERT INTO available_apis
+                 (name,display_name,endpoint,required_params,example_params,description,is_active,custom_message)
                  VALUES (?,?,?,?,?,?,1,'API is currently turned off.')`, a
             ));
         }
@@ -212,8 +220,8 @@ const getParam = (p, ...keys) => {
 };
 
 const parseParam = (raw) => {
-    let params = {}, examples = {};
-    try { params   = JSON.parse(raw || '{}'); } catch(_) {}
+    let params = {};
+    try { params = JSON.parse(raw || '{}'); } catch(_) {}
     return params;
 };
 
@@ -224,29 +232,47 @@ const formatApis = (apis) => apis.map(api => {
 
 // ─── API PROXY MAP ────────────────────────────────────────────────────────────
 const apiProxyMap = {
-    'leakpro':      p => `https://backend-dqcg.onrender.com/api/leak?query=${getParam(p,'number','query','q','num','quiry','term')}`,
-    'vehicle-info': p => `https://backend-dqcg.onrender.com/api/veh?vehicle=${getParam(p,'vehicle','registration_number','q','term','query')}`,
-    'telegram-num': p => `https://tg-to-num-ten.vercel.app/tg?key=sahil_X&num=${getParam(p,'term','id','username','num','query','q')}`,
-    'aadhr':  p => `https://backend-dqcg.onrender.com/api/adhar?adhar=${getParam(p,'q','term','id','query','number')}`,
-    'number-info':  p => `https://backend-dqcg.onrender.com/api/num?number=${getParam(p,'q','number','num','query','term')}`,
-    'num-newinfo':  p => `https://leakapi.dpdns.org/search?q=${getParam(p,'q','number','num','query','term')}`,
-    'email-info':   p => `https://osint.invalidayushh.workers.dev/email?key=Sahil&q=${getParam(p,'q','email','query')}`,
-    'insta':        p => `https://osint.invalidayushh.workers.dev/insta?key=Sahil&q=${getParam(p,'username','q','query')}`,
-    'vehicle':      p => `https://leakapi.dpdns.org/api/vehicle?vehicle=${getParam(p,'vehicle','q','term','query')}`,
-    'family':       p => `https://ayaanmods.site/family.php?key=${MASTER_KEYS.subhxco}&term=${getParam(p,'term','q','query','number')}`,
-    'num-india':    p => `https://ft-osint-api.duckdns.org/api/number?key=${MASTER_KEYS.ftosint}&num=${getParam(p,'num','number','q','query')}`,
-    'num-pak':      p => `https://ft-osint-api.duckdns.org/api/pk?key=${MASTER_KEYS.ftosint}&number=${getParam(p,'number','num','q','query')}`,
-    'bank':         p => `https://ft-osint-api.duckdns.org/api/ifsc?key=${MASTER_KEYS.ftosint}&ifsc=${getParam(p,'ifsc','q','query')}`,
-    'pan':          p => `https://ft-osint-api.duckdns.org/api/pan?key=${MASTER_KEYS.ftosint}&pan=${getParam(p,'pan','q','query')}`,
-    'rc':           p => `https://backend-dqcg.onrender.com/api/rc?vehicle=${getParam(p,'owner','vehicle','q','query')}`,
-    'ip':           p => `https://backend-dqcg.onrender.com/api/ip?ip=${getParam(p,'ip','q','query')}`,
-    'pincode':      p => `https://backend-dqcg.onrender.com/api/pin?pincode=${getParam(p,'pin','q','query')}`,
-    'git':          p => `https://ft-osint-api.duckdns.org/api/git?key=${MASTER_KEYS.ftosint}&username=${getParam(p,'username','q','query')}`,
-    'bgmi':         p => `https://ft-osint-api.duckdns.org/api/bgmi?key=${MASTER_KEYS.ftosint}&uid=${getParam(p,'uid','q','query')}`,
-    'ff':           p => `https://ft-osint-api.duckdns.org/api/ff?key=${MASTER_KEYS.ftosint}&uid=${getParam(p,'uid','q','query')}`,
+    // ── Phone / Number ────────────────────────────────────────────────────────
+    'tg':           p => `${NEW_BASE}/api/tg?number=${getParam(p,'number','term','id','username','num','query','q')}`,
+    'num':          p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
+    'num2':         p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
+    'num-india':    p => `${NEW_BASE}/api/num-india?number=${getParam(p,'num','number','q','query')}`,
+    'num-pak':      p => `${NEW_BASE}/api/num-pak?number=${getParam(p,'number','num','q','query')}`,
+    'chain':        p => `${NEW_BASE}/api/chain?number=${getParam(p,'number','query','q','num','term')}`,
+    'bom':          p => `${NEW_BASE}/api/bom?number=${getParam(p,'number','num','q','query','term')}`,
+    // aliases kept for backward compat
+    'telegram-num': p => `${NEW_BASE}/api/tg?number=${getParam(p,'term','id','username','num','query','q')}`,
+    'number-info':  p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
+    'num-newinfo':  p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
+
+    // ── Identity ──────────────────────────────────────────────────────────────
+    'aadhr':        p => `${NEW_BASE}/api/adhar?adhar=${getParam(p,'q','adhar','term','id','query','number')}`,
+    'pan':          p => `${NEW_BASE}/api/pan?pan=${getParam(p,'pan','q','query')}`,
+    'family':       p => `${NEW_BASE}/api/family?adhar=${getParam(p,'term','adhar','q','query','number')}`,
+    'email-info':   p => `${NEW_BASE}/api/email?email=${getParam(p,'q','email','query')}`,
+
+    // ── Vehicle ───────────────────────────────────────────────────────────────
+    'veh-to-num':   p => `${NEW_BASE}/api/veh-info?registration_number=${getParam(p,'vehicle','term','q','query')}`,
+    'vehicle-info': p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','registration_number','q','term','query')}`,
+    'vehicle':      p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','q','term','query')}`,
+    'rc':           p => `${NEW_BASE}/api/rc?registration_number=${getParam(p,'owner','vehicle','q','query')}`,
+
+    // ── Social / Gaming ───────────────────────────────────────────────────────
+    'insta':        p => `${NEW_BASE}/api/insta?username=${getParam(p,'username','q','query')}`,
+    'snap':         p => `${NEW_BASE}/api/snap?username=${getParam(p,'username','q','query')}`,
+    'git':          p => `${NEW_BASE}/api/git?username=${getParam(p,'username','q','query')}`,
+    'bgmi':         p => `${NEW_BASE}/api/bgmi?uid=${getParam(p,'uid','q','query')}`,
+    'ff':           p => `${NEW_BASE}/api/ff?uid=${getParam(p,'uid','q','query')}`,
+
+    // ── Tech / Other ──────────────────────────────────────────────────────────
+    'ip':           p => `${NEW_BASE}/api/ip?ip=${getParam(p,'ip','q','query')}`,
+    'bank':         p => `${NEW_BASE}/api/ifsc?ifsc=${getParam(p,'ifsc','q','query')}`,
+    'pincode':      p => `${NEW_BASE}/api/pin?pincode=${getParam(p,'pin','pincode','q','query')}`,
+    'leak':         p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','term')}`,
+    'leakpro':      p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','quiry','term')}`,
     'ai-image':     p => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${getParam(p,'prompt','q','query')}`,
-    'leak':         p => `https://backend-dqcg.onrender.com/api/chain?number=${getParam(p,'number','query','q','num','term')}`,
-    'veh-to-num':   p => `https://backend-dqcg.onrender.com/api/veh-info?vehicle=${getParam(p,'vehicle','term','q','query')}`,
+
+    // ── Mistral — handles its own response ────────────────────────────────────
     'mistral': async (p, res, keyData, rateLimitInfo) => {
         const message = decodeURIComponent(getParam(p, 'message', 'q', 'query', 'prompt'));
         if (!message) return res.status(400).json({ error: 'message param required', contact: OWNER });
@@ -411,9 +437,9 @@ app.get('/admin/dashboard', requireAuth, async (req, res) => {
                    FROM analytics`)
         ]);
 
-        const activeApis = (apis || []).filter(a => a.is_active === 1).length;
-        const totalReq   = reqStats ? (reqStats.total || 0) : 0;
-        const successReq = reqStats ? (reqStats.success || 0) : 0;
+        const activeApis  = (apis || []).filter(a => a.is_active === 1).length;
+        const totalReq    = reqStats ? (reqStats.total || 0) : 0;
+        const successReq  = reqStats ? (reqStats.success || 0) : 0;
         const successRate = totalReq > 0 ? ((successReq / totalReq) * 100).toFixed(1) : '100.0';
 
         const recent = (recentActivity || []).map(r => ({
@@ -424,26 +450,26 @@ app.get('/admin/dashboard', requireAuth, async (req, res) => {
         }));
 
         res.render('dashboard', {
-            keys         : keys || [],
-            totalHits    : keys.reduce((s, k) => s + (k.hits || 0), 0),
-            active       : keys.filter(k => k.status === 'active').length,
-            apis         : formatApis(apis || []),
-            chartData    : (chartRows || []).reverse(),
-            dailyVolume  : (dailyVolume || []).reverse(),
-            topEndpoints : topEndpoints || [],
+            keys           : keys || [],
+            totalHits      : keys.reduce((s, k) => s + (k.hits || 0), 0),
+            active         : keys.filter(k => k.status === 'active').length,
+            apis           : formatApis(apis || []),
+            chartData      : (chartRows || []).reverse(),
+            dailyVolume    : (dailyVolume || []).reverse(),
+            topEndpoints   : topEndpoints || [],
             recentActivity : recent,
-            health       : {
+            health: {
                 uptime      : Math.floor(process.uptime()),
                 activeApis  : activeApis,
                 totalApis   : (apis || []).length,
                 successRate : successRate,
                 totalReq    : totalReq
             },
-            user       : req.session.user,
-            baseUrl    : req.protocol + '://' + req.get('host'),
-            settings   : settings || { maintenance_message: 'API is currently under maintenance.' },
-            owner      : OWNER,
-            channel    : CHANNEL
+            user     : req.session.user,
+            baseUrl  : req.protocol + '://' + req.get('host'),
+            settings : settings || { maintenance_message: 'API is currently under maintenance.' },
+            owner    : OWNER,
+            channel  : CHANNEL
         });
     } catch (err) {
         console.error('Admin dashboard error:', err);
@@ -459,9 +485,7 @@ app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
             dbAll('SELECT * FROM users ORDER BY created_at DESC'),
             dbAll('SELECT * FROM available_apis'),
             dbGet('SELECT * FROM settings WHERE id = 1'),
-            dbAll('SELECT date, SUM(calls) as total_calls FROM daily_calls GROUP BY date ORDER BY date DESC LIMIT 7'),
-            dbAll('SELECT date, SUM(calls) as total FROM daily_calls GROUP BY date ORDER BY date DESC LIMIT 7'),
-            dbAll('SELECT endpoint, COUNT(*) as hits FROM analytics GROUP BY endpoint ORDER BY hits DESC LIMIT 5')
+            dbAll('SELECT date, SUM(calls) as total_calls FROM daily_calls GROUP BY date ORDER BY date DESC LIMIT 7')
         ]);
         res.render('head_admin_dashboard', {
             keys      : keys || [],
@@ -481,15 +505,15 @@ app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
     }
 });
 
-// ─── ANALYTICS PAGE ────────────────────────────────────────────────────────────
+// ─── ANALYTICS PAGE ───────────────────────────────────────────────────────────
 app.get('/admin/analytics', requireAuth, async (req, res) => {
     try {
         const epCount = await dbGet('SELECT COUNT(*) as c FROM available_apis');
         res.render('analytics', {
             totalEndpoints : epCount ? epCount.c : 0,
-            user   : req.session.user,
-            owner  : OWNER,
-            channel: CHANNEL
+            user    : req.session.user,
+            owner   : OWNER,
+            channel : CHANNEL
         });
     } catch (err) {
         console.error('Analytics page error:', err);
@@ -497,7 +521,7 @@ app.get('/admin/analytics', requireAuth, async (req, res) => {
     }
 });
 
-// ─── ANALYTICS DATA (JSON, live-refresh) ───────────────────────────────────────
+// ─── ANALYTICS DATA ───────────────────────────────────────────────────────────
 app.get('/analytics/data', requireAuth, async (req, res) => {
     try {
         const [
@@ -529,26 +553,25 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
             dbGet('SELECT COUNT(*) as c FROM available_apis')
         ]);
 
-        const totalRequests = totalRow ? totalRow.c : 0;
+        const totalRequests = totalRow   ? totalRow.c   : 0;
         const totalSuccess  = successRow ? successRow.c : 0;
-        const totalError    = errorRow ? errorRow.c : 0;
-        const uniqueIps     = ipRow ? ipRow.c : 0;
+        const totalError    = errorRow   ? errorRow.c   : 0;
+        const uniqueIps     = ipRow      ? ipRow.c      : 0;
         const avgLatency    = latRow && latRow.avg ? Math.round(latRow.avg) : 0;
         const errorRate     = totalRequests > 0 ? ((totalError / totalRequests) * 100).toFixed(1) : '0.0';
 
-        // Build 24-hour buckets (fill gaps with zeros)
         const hourMap = {};
         (hourlyRows || []).forEach(h => { hourMap[h.hour] = h; });
         const nowH = new Date().getHours();
         const hourlyChart = [];
         for (let i = 23; i >= 0; i--) {
-            const hh = String((nowH - i + 24) % 24).padStart(2, '0');
+            const hh  = String((nowH - i + 24) % 24).padStart(2, '0');
             const row = hourMap[hh];
             hourlyChart.push({
                 label   : hh + ':00',
-                hits    : row ? row.hits : 0,
+                hits    : row ? row.hits    : 0,
                 success : row ? row.success : 0,
-                error   : row ? row.error : 0
+                error   : row ? row.error   : 0
             });
         }
 
@@ -618,9 +641,8 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
     } = req.body;
     const isCustomEnabled = req.body.enable_custom === 'on';
 
-    if (isCustomEnabled && (!custom_key || !custom_key.trim())) {
+    if (isCustomEnabled && (!custom_key || !custom_key.trim()))
         return res.status(400).send('❌ Please enter a custom key string.');
-    }
 
     let expires_at = null;
     const now = new Date();
@@ -773,7 +795,7 @@ app.post('/admin/bulk-key-action', requireAuth, async (req, res) => {
     const { key_ids, action } = req.body;
     if (!key_ids || !Array.isArray(key_ids) || !key_ids.length)
         return res.status(400).json({ success: false, error: 'No keys selected' });
-    const ph  = key_ids.map(() => '?').join(',');
+    const ph   = key_ids.map(() => '?').join(',');
     const sqls = {
         enable : `UPDATE api_keys SET api_enabled = 1 WHERE id IN (${ph})`,
         disable: `UPDATE api_keys SET api_enabled = 0 WHERE id IN (${ph})`,
@@ -853,6 +875,31 @@ app.post('/head-admin/delete-user', requireHeadAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
+// ─── MIGRATE ROUTE — run once then delete ────────────────────────────────────
+// GET /admin/migrate-apis — seeds any new endpoints that don't exist yet
+app.get('/admin/migrate-apis', requireAuth, async (req, res) => {
+    const newApis = [
+        ['tg',    '📞 TG to Number',  '/api/tg',    '{"number":""}','{"number":"9876543210"}','Telegram number lookup'],
+        ['num2',  '🔍 Number Info v2','/api/num2',  '{"number":""}','{"number":"9876543210"}','Advanced number information'],
+        ['bom',   '💥 BOM Lookup',    '/api/bom',   '{"number":""}','{"number":"9876543210"}','BOM number lookup'],
+        ['snap',  '👻 Snapchat Info', '/api/snap',  '{"username":""}','{"username":"john_doe"}','Snapchat profile lookup'],
+        ['chain', '🔗 Chain Lookup',  '/api/chain', '{"number":""}','{"number":"9876543210"}','Chained number info'],
+    ];
+    try {
+        for (const row of newApis) {
+            await dbRun(
+                `INSERT OR IGNORE INTO available_apis
+                 (name,display_name,endpoint,required_params,example_params,description,is_active,custom_message)
+                 VALUES (?,?,?,?,?,?,1,'API is currently turned off.')`,
+                row
+            );
+        }
+        res.json({ success: true, message: 'Migration complete. Remove this route.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ─── MAIN API ENDPOINT ────────────────────────────────────────────────────────
 app.all('/api/:endpoint', globalLimiter, async (req, res) => {
     const userKey  = req.query.key || req.body.key;
@@ -897,8 +944,8 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         // ── Rate limiting ──────────────────────────────────────────────────────
         let rateLimitInfo = {};
         if (!keyData.unlimited_hits && keyData.rate_limit_enabled) {
-            const perDay = parseInt(keyData.rate_limit_per_day)    || 100;
-            const perMin = parseInt(keyData.rate_limit_per_minute)  || 0;
+            const perDay = parseInt(keyData.rate_limit_per_day)   || 100;
+            const perMin = parseInt(keyData.rate_limit_per_minute) || 0;
             const nowTs  = Math.floor(Date.now() / 60000);
 
             const dailyRow = await dbGet(
@@ -973,13 +1020,15 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             if (keyData.note_enabled == 1 && keyData.key_note) data.key_note = keyData.key_note;
 
             dbRun(`INSERT INTO analytics (api_key,endpoint,status_code,ip_address,response_time,date)
-                   VALUES (?,?,?,?,?,?)`, [userKey, endpoint, upstream.status, req.ip, responseMs, today]).catch(() => {});
+                   VALUES (?,?,?,?,?,?)`,
+                [userKey, endpoint, upstream.status, req.ip, responseMs, today]).catch(() => {});
 
             res.json(data);
         } catch (err) {
             console.error('Proxy error:', err);
             dbRun(`INSERT INTO analytics (api_key,endpoint,status_code,ip_address,response_time,date)
-                   VALUES (?,?,?,?,?,?)`, [userKey, endpoint, 500, req.ip, Date.now() - reqStart, today]).catch(() => {});
+                   VALUES (?,?,?,?,?,?)`,
+                [userKey, endpoint, 500, req.ip, Date.now() - reqStart, today]).catch(() => {});
             res.status(500).json({ error: 'Upstream API failed', details: err.message });
         }
 
@@ -992,7 +1041,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 // ─── HEALTH ───────────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
-// ─── ERROR HANDLER (must be last) ────────────────────────────────────────────
+// ─── ERROR HANDLER ────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
     console.error('Unhandled:', err);
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
