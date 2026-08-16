@@ -120,6 +120,7 @@ db.serialize(() => {
 
     // Safe migrations
     db.run(`ALTER TABLE available_apis ADD COLUMN custom_message TEXT DEFAULT 'API is currently turned off.'`, () => {});
+    db.run(`ALTER TABLE api_keys ADD COLUMN max_hits INTEGER DEFAULT 0`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN response_time INTEGER`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`, () => {});
 
@@ -637,7 +638,8 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
     const {
         name, expiry, unlimited_hits, selected_apis, custom_key,
         rate_limit_per_day, rate_limit_per_minute, key_note,
-        custom_expiry_date, custom_expiry_time
+        custom_expiry_date, custom_expiry_time,
+        max_hits: raw_max_hits, one_time
     } = req.body;
     const isCustomEnabled = req.body.enable_custom === 'on';
 
@@ -663,6 +665,8 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
     }
 
     const isUnlimited = ['true','on','1'].includes(String(unlimited_hits));
+    const isOneTime   = ['true','on','1'].includes(String(one_time));
+    const maxHits     = isUnlimited ? 0 : (isOneTime ? 1 : (parseInt(raw_max_hits) || 0));
     const noteText    = (key_note || '').trim();
     const perDay      = isUnlimited ? 0 : (parseInt(rate_limit_per_day)    || 100);
     const perMin      = isUnlimited ? 0 : (parseInt(rate_limit_per_minute) || 0);
@@ -672,15 +676,15 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
             `INSERT INTO api_keys
              (key,name,owner_username,owner_channel,expires_at,unlimited_hits,allowed_apis,
               status,is_custom,rate_limit_enabled,rate_limit_per_day,rate_limit_per_minute,
-              key_note,note_enabled,last_updated,api_enabled)
-             VALUES (?,?,?,?,?,?,?,'active',?,?,?,?,?,?,?,1)`,
+              key_note,note_enabled,last_updated,api_enabled,max_hits)
+             VALUES (?,?,?,?,?,?,?,'active',?,?,?,?,?,?,?,1,?)`,
             [apiKey, name, OWNER, CHANNEL,
              expires_at ? expires_at.toISOString() : null,
              isUnlimited ? 1 : 0, allowedApisJson,
              isCustom ? 1 : 0,
              isUnlimited ? 0 : 1, perDay, perMin,
              noteText, noteText.length > 0 ? 1 : 0,
-             new Date().toISOString()]
+             new Date().toISOString(), maxHits]
         );
         res.redirect('/admin/dashboard');
     };
@@ -813,7 +817,7 @@ app.post('/admin/bulk-key-action', requireAuth, async (req, res) => {
 
 // ─── API MANAGEMENT ───────────────────────────────────────────────────────────
 app.post('/admin/toggle-api', requireAuth, async (req, res) => {
-    const { api_id, is_active } = req.body;
+    const { api_id, is_active } = { ...req.body, ...req.query };
     if (!api_id) return res.status(400).json({ error: 'API ID required' });
     try {
         await dbRun('UPDATE available_apis SET is_active = ? WHERE id = ?', [is_active ? 1 : 0, api_id]);
@@ -822,7 +826,7 @@ app.post('/admin/toggle-api', requireAuth, async (req, res) => {
 });
 
 app.post('/admin/update-api-status', requireAuth, async (req, res) => {
-    const { api_id, is_active, custom_message } = req.body;
+    const { api_id, is_active, custom_message } = { ...req.body, ...req.query };
     if (!api_id) return res.status(400).json({ error: 'API ID required' });
     try {
         await dbRun('UPDATE available_apis SET is_active = ?, custom_message = ? WHERE id = ?',
@@ -920,7 +924,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             return res.json({ status: false, message: targetApi.custom_message || 'This API is currently turned off.' });
 
         // Validate key
-        const keyData = await dbGet('SELECT * FROM api_keys WHERE key = ?', [userKey]);
+        const keyData = await dbGet('SELECT * FROM api_keys WHERE UPPER(key) = UPPER(?)', [userKey]);
         if (!keyData)
             return res.status(403).json({ error: 'Invalid API key', contact: OWNER });
         if (keyData.api_enabled === 0)
@@ -935,10 +939,22 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
                 return res.status(403).json({ success: false, error: `Endpoint "${endpoint}" not allowed for this key.` });
         } catch(_) {}
 
-        // Check expiry
+        // Check expiry (date-based)
         if (keyData.expires_at && new Date(keyData.expires_at) < new Date()) {
             dbRun('UPDATE api_keys SET status = "expired" WHERE id = ?', [keyData.id]).catch(() => {});
             return res.status(403).json({ error: 'Key expired', contact: OWNER });
+        }
+
+        // Check expiry (hit-count-based) — max_hits 0 = unlimited
+        if (!keyData.unlimited_hits && keyData.max_hits > 0 && keyData.hits >= keyData.max_hits) {
+            dbRun('UPDATE api_keys SET status = "expired" WHERE id = ?', [keyData.id]).catch(() => {});
+            return res.status(403).json({
+                success: false,
+                error  : `Key expired — request limit reached (${keyData.max_hits} calls)`,
+                used   : keyData.hits,
+                limit  : keyData.max_hits,
+                contact: OWNER
+            });
         }
 
         // ── Rate limiting ──────────────────────────────────────────────────────
