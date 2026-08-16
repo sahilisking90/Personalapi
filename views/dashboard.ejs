@@ -604,6 +604,229 @@
     .activity-code.err { color: var(--red); background: rgba(248,113,113,0.1); }
     .activity-time { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #334155; white-space: nowrap; }
     .activity-empty { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 40px 0; color: #334155; font-size: 12px; }
+
+    /* ── API MANAGEMENT ─────────────────────────────────── */
+    .api-mgmt-wrap {
+      margin-top: 20px;
+      background: rgba(13, 20, 38, 0.7);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .api-mgmt-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 24px 18px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .api-mgmt-title-group { display: flex; align-items: center; gap: 14px; }
+    .api-mgmt-icon {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(34,211,238,0.15), rgba(129,140,248,0.15));
+      border: 1px solid rgba(34,211,238,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: var(--cyan);
+      box-shadow: 0 0 20px rgba(34,211,238,0.08);
+    }
+    .api-mgmt-title { font-size: 15px; font-weight: 800; color: #f1f5f9; letter-spacing: -0.02em; }
+    .api-mgmt-sub { font-size: 11px; color: #475569; margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+    .api-mgmt-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .api-search-wrap {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 7px 12px;
+    }
+    .api-search-wrap i { font-size: 11px; color: #334155; }
+    .api-search-wrap input {
+      background: none; border: none; outline: none;
+      color: #94a3b8; font-size: 12px; width: 160px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .api-search-wrap input::placeholder { color: #334155; }
+
+    .api-filter-tabs { display: flex; gap: 4px; }
+    .api-filter-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border-radius: 8px;
+      background: transparent; border: 1px solid transparent;
+      color: #475569; font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .api-filter-btn:hover { color: #64748b; background: rgba(255,255,255,0.03); }
+    .api-filter-btn.active {
+      color: var(--cyan);
+      background: rgba(34,211,238,0.08);
+      border-color: rgba(34,211,238,0.15);
+    }
+    .flt-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .flt-dot.on  { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
+    .flt-dot.off { background: var(--red); }
+
+    /* Stats strip */
+    .api-stats-strip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.15);
+      flex-wrap: wrap;
+    }
+    .api-stat-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      border: 1px solid;
+    }
+    .pill-emerald { color: var(--emerald); background: rgba(52,211,153,0.07); border-color: rgba(52,211,153,0.18); }
+    .pill-red     { color: var(--red);     background: rgba(248,113,113,0.07); border-color: rgba(248,113,113,0.18); }
+    .pill-slate   { color: #64748b;        background: rgba(255,255,255,0.03); border-color: var(--border); }
+
+    .api-bulk-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 13px; border-radius: 8px;
+      font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s;
+      margin-left: auto;
+    }
+    .bulk-on {
+      background: rgba(52,211,153,0.08);
+      border: 1px solid rgba(52,211,153,0.2);
+      color: var(--emerald);
+    }
+    .bulk-on:hover { background: rgba(52,211,153,0.16); }
+    .bulk-off {
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.2);
+      color: var(--red);
+      margin-left: 0;
+    }
+    .bulk-off:hover { background: rgba(248,113,113,0.16); }
+
+    /* Grid */
+    .api-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 1px;
+      background: var(--border);
+    }
+
+    .api-card-item {
+      background: var(--panel);
+      padding: 18px;
+      transition: background 0.2s;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .api-card-item:hover { background: rgba(15,24,44,0.95); }
+    .api-card-item.is-off { opacity: 0.6; }
+    .api-card-item.is-off .api-card-path { color: #1e293b; }
+
+    .api-card-top { display: flex; align-items: flex-start; justify-content: space-between; }
+
+    .api-card-icon-wrap {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: rgba(34,211,238,0.07);
+      border: 1px solid rgba(34,211,238,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .api-card-emoji { line-height: 1; }
+
+    /* Toggle Switch */
+    .toggle-switch { position: relative; display: inline-flex; cursor: pointer; }
+    .toggle-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      width: 38px; height: 21px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 99px;
+      position: relative;
+      transition: all 0.25s;
+    }
+    .toggle-switch input:checked + .toggle-track {
+      background: rgba(34,211,238,0.2);
+      border-color: rgba(34,211,238,0.4);
+      box-shadow: 0 0 12px rgba(34,211,238,0.2);
+    }
+    .toggle-thumb {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 15px; height: 15px;
+      background: #334155;
+      border-radius: 50%;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .toggle-switch input:checked + .toggle-track .toggle-thumb {
+      left: 19px;
+      background: var(--cyan);
+      box-shadow: 0 0 8px rgba(34,211,238,0.6);
+    }
+
+    .api-card-name {
+      font-size: 12px; font-weight: 700; color: #cbd5e1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .api-card-path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; color: #334155;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .api-card-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 4px;
+    }
+    .api-status-badge {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px; border-radius: 99px;
+    }
+    .badge-live { color: var(--emerald); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); }
+    .badge-dead { color: #475569;        background: rgba(255,255,255,0.03); border: 1px solid var(--border); }
+    .badge-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: currentColor;
+    }
+    .badge-live .badge-dot { box-shadow: 0 0 4px currentColor; animation: pulse-dot 2s infinite; }
+    @keyframes pulse-dot {
+      0%,100%{ opacity:1; } 50%{ opacity:0.4; }
+    }
+
+    .api-msg-btn {
+      width: 26px; height: 26px;
+      border-radius: 7px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      color: #334155;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .api-msg-btn:hover { color: var(--indigo); border-color: rgba(129,140,248,0.3); background: rgba(129,140,248,0.06); }
+
+    /* Updating state */
+    .api-card-item.updating { pointer-events: none; }
+    .api-card-item.updating .toggle-track { opacity: 0.5; }
+
+    /* Empty */
+    .api-empty {
+      padding: 48px;
+      text-align: center;
+      color: #334155;
+    }
+    .api-empty i { font-size: 28px; margin-bottom: 10px; display: block; }
+    .api-empty p { font-size: 13px; }
+
   </style>
 </head>
 <body>
@@ -872,6 +1095,123 @@
       </table>
     </div>
   </div>
+
+  <!-- ── API MANAGEMENT ──────────────────────────────── -->
+  <div class="api-mgmt-wrap">
+
+    <!-- Header row -->
+    <div class="api-mgmt-header">
+      <div class="api-mgmt-title-group">
+        <div class="api-mgmt-icon"><i class="fa-solid fa-cubes-stacked"></i></div>
+        <div>
+          <div class="api-mgmt-title">Endpoint Control</div>
+          <div class="api-mgmt-sub">Toggle live availability of every module</div>
+        </div>
+      </div>
+      <div class="api-mgmt-controls">
+        <div class="api-search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="apiSearchInput" onkeyup="filterApis()" placeholder="Search endpoints...">
+        </div>
+        <div class="api-filter-tabs" id="apiFilterTabs">
+          <button class="api-filter-btn active" onclick="filterByStatus('all',this)">All</button>
+          <button class="api-filter-btn" onclick="filterByStatus('on',this)"><span class="flt-dot on"></span>Online</button>
+          <button class="api-filter-btn" onclick="filterByStatus('off',this)"><span class="flt-dot off"></span>Offline</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="api-stats-strip">
+      <div class="api-stat-pill pill-emerald">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="apiOnlineCount"><%= apis.filter(function(a){return a.is_active===1;}).length %></span> online
+      </div>
+      <div class="api-stat-pill pill-red">
+        <i class="fa-solid fa-circle-xmark"></i>
+        <span id="apiOfflineCount"><%= apis.filter(function(a){return a.is_active===0;}).length %></span> offline
+      </div>
+      <div class="api-stat-pill pill-slate">
+        <i class="fa-solid fa-layer-group"></i>
+        <%= apis.length %> total
+      </div>
+      <button class="api-bulk-btn bulk-on" onclick="bulkToggle(true)">
+        <i class="fa-solid fa-power-off"></i> Enable All
+      </button>
+      <button class="api-bulk-btn bulk-off" onclick="bulkToggle(false)">
+        <i class="fa-solid fa-ban"></i> Disable All
+      </button>
+    </div>
+
+    <!-- API Grid -->
+    <div class="api-grid" id="apiGrid">
+      <% apis.forEach(function(api) { %>
+      <div class="api-card-item <%= api.is_active ? 'is-on' : 'is-off' %>"
+           data-name="<%= api.display_name.toLowerCase() %>"
+           data-status="<%= api.is_active ? 'on' : 'off' %>"
+           data-id="<%= api.id %>"
+           id="apicard-<%= api.id %>">
+
+        <div class="api-card-top">
+          <div class="api-card-icon-wrap">
+            <span class="api-card-emoji"><%= api.display_name.split(' ')[0] %></span>
+          </div>
+          <label class="toggle-switch" title="Toggle <%= api.display_name %>">
+            <input type="checkbox"
+              <%= api.is_active ? 'checked' : '' %>
+              onchange="toggleApi(<%= api.id %>, this.checked, '<%= api.name %>')"
+              id="toggle-<%= api.id %>">
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+          </label>
+        </div>
+
+        <div class="api-card-name"><%= api.display_name.replace(/^\S+\s/, '') %></div>
+        <div class="api-card-path"><%= api.endpoint %></div>
+
+        <div class="api-card-foot">
+          <span class="api-status-badge <%= api.is_active ? 'badge-live' : 'badge-dead' %>">
+            <span class="badge-dot"></span>
+            <%= api.is_active ? 'Live' : 'Off' %>
+          </span>
+          <button class="api-msg-btn" onclick="openMsgModal(<%= api.id %>, '<%= encodeURIComponent(api.custom_message || '') %>')" title="Offline message">
+            <i class="fa-solid fa-message-pen"></i>
+          </button>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+
+    <!-- Empty state -->
+    <div class="api-empty" id="apiEmpty" style="display:none">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <p>No endpoints match</p>
+    </div>
+
+  </div>
+
+  <!-- Offline Message Modal -->
+  <div class="modal-overlay" id="msgModal">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <div class="modal-title"><i class="fa-solid fa-message-pen"></i> Offline Message</div>
+        <button class="modal-close" onclick="closeModal('msgModal')"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Message shown when endpoint is offline</label>
+          <textarea id="msgModalText" rows="3" class="form-input" style="resize:vertical" placeholder="API is currently turned off."></textarea>
+        </div>
+        <input type="hidden" id="msgModalId">
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="saveMsgModal()">
+          <i class="fa-solid fa-floppy-disk"></i> Save Message
+        </button>
+      </div>
+    </div>
+  </div>
+
+
 </main>
 
 <!-- ── GENERATE MODAL ─────────────────────────────────── -->
@@ -1265,6 +1605,123 @@ document.getElementById('enable_custom').addEventListener('change', function() {
 
 // Init default access mode = All for both modals
 setAccessMode('gen', 'all');
+
+// ── API MANAGEMENT ─────────────────────────────────────────
+
+function filterApis() {
+  var val = document.getElementById('apiSearchInput').value.toLowerCase();
+  var activeFilter = document.querySelector('.api-filter-btn.active')?.dataset.filter || 'all';
+  var cards = document.querySelectorAll('.api-card-item');
+  var visible = 0;
+  cards.forEach(function(card) {
+    var nameMatch = card.dataset.name.includes(val);
+    var statusMatch = activeFilter === 'all' || card.dataset.status === activeFilter;
+    if (nameMatch && statusMatch) { card.style.display = ''; visible++; }
+    else card.style.display = 'none';
+  });
+  document.getElementById('apiEmpty').style.display = visible === 0 ? 'block' : 'none';
+}
+
+function filterByStatus(status, btn) {
+  document.querySelectorAll('.api-filter-btn').forEach(function(b){ b.classList.remove('active'); b.dataset.filter = b.dataset.filter; });
+  document.querySelectorAll('.api-filter-btn').forEach(function(b, i){ b.dataset.filter = ['all','on','off'][i]; });
+  btn.classList.add('active');
+  btn.dataset.filter = status;
+  filterApis();
+}
+
+async function toggleApi(id, enabled, name) {
+  var card = document.getElementById('apicard-' + id);
+  card.classList.add('updating');
+  try {
+    var res = await fetch('/admin/toggle-api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_id: id, is_active: enabled ? 1 : 0 })
+    });
+    var data = await res.json();
+    if (data.success) {
+      card.classList.toggle('is-on', enabled);
+      card.classList.toggle('is-off', !enabled);
+      card.dataset.status = enabled ? 'on' : 'off';
+      // update badge
+      var badge = card.querySelector('.api-status-badge');
+      if (badge) {
+        badge.className = 'api-status-badge ' + (enabled ? 'badge-live' : 'badge-dead');
+        badge.innerHTML = '<span class="badge-dot"></span>' + (enabled ? 'Live' : 'Off');
+      }
+      // update counts
+      var online  = document.querySelectorAll('.api-card-item.is-on').length;
+      var offline = document.querySelectorAll('.api-card-item.is-off').length;
+      document.getElementById('apiOnlineCount').textContent  = online;
+      document.getElementById('apiOfflineCount').textContent = offline;
+      showToast(name + ' ' + (enabled ? 'enabled' : 'disabled'));
+    } else {
+      document.getElementById('toggle-' + id).checked = !enabled;
+      showToast('Failed to update', true);
+    }
+  } catch(e) {
+    document.getElementById('toggle-' + id).checked = !enabled;
+    showToast('Network error', true);
+  }
+  card.classList.remove('updating');
+}
+
+async function bulkToggle(enabled) {
+  var cards = document.querySelectorAll('.api-card-item');
+  var promises = [];
+  cards.forEach(function(card) {
+    var id = card.dataset.id;
+    var chk = document.getElementById('toggle-' + id);
+    if (chk && chk.checked !== enabled) {
+      promises.push(toggleApi(id, enabled, card.querySelector('.api-card-name')?.textContent || 'API'));
+    }
+  });
+  await Promise.all(promises);
+  showToast(enabled ? 'All endpoints enabled' : 'All endpoints disabled');
+}
+
+function openMsgModal(id, encodedMsg) {
+  document.getElementById('msgModalId').value = id;
+  document.getElementById('msgModalText').value = decodeURIComponent(encodedMsg) || 'API is currently turned off.';
+  openModal('msgModal');
+}
+
+async function saveMsgModal() {
+  var id  = document.getElementById('msgModalId').value;
+  var msg = document.getElementById('msgModalText').value.trim() || 'API is currently turned off.';
+  var card = document.getElementById('apicard-' + id);
+  var isActive = card ? (card.dataset.status === 'on' ? 1 : 0) : 0;
+  try {
+    var res = await fetch('/admin/update-api-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_id: id, is_active: isActive, custom_message: msg })
+    });
+    var data = await res.json();
+    if (data.success) {
+      closeModal('msgModal');
+      showToast('Offline message saved');
+    } else {
+      showToast('Save failed', true);
+    }
+  } catch(e) { showToast('Network error', true); }
+}
+
+// Init filter data attributes on load
+document.querySelectorAll('.api-filter-btn').forEach(function(b, i) {
+  b.dataset.filter = ['all','on','off'][i];
+});
+
+function showToast(msg, err) {
+  var t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.style.background = err ? 'rgba(248,113,113,0.15)' : '';
+  t.style.borderColor = err ? 'rgba(248,113,113,0.3)' : '';
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); t.style.background=''; t.style.borderColor=''; }, 2200);
+}
+
 </script>
 </body>
 </html>
