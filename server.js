@@ -244,7 +244,7 @@ const apiProxyMap = {
     'num2':         p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
     'num-india':    p => `${NEW_BASE}/api/num-india?number=${getParam(p,'num','number','q','query')}`,
     'num-pak':      p => `${NEW_BASE}/api/num-pak?number=${getParam(p,'number','num','q','query')}`,
-    'chain':        p => `${NEW_BASE}/api/chain?number=${getParam(p,'number','query','q','num','term')}`,
+    'chain':        p => `${NEW_BASE}/api/leak?number=${getParam(p,'number','query','q','num','term')}`,
     'bom':          p => `${NEW_BASE}/api/bom?number=${getParam(p,'number','num','q','query','term')}`,
     // aliases kept for backward compat
     'telegram-num': p => `${NEW_BASE}/api/tg?number=${getParam(p,'term','id','username','num','query','q')}`,
@@ -274,8 +274,8 @@ const apiProxyMap = {
     'ip':           p => `${NEW_BASE}/api/ip?ip=${getParam(p,'ip','q','query')}`,
     'bank':         p => `${NEW_BASE}/api/ifsc?ifsc=${getParam(p,'ifsc','q','query')}`,
     'pincode':      p => `${NEW_BASE}/api/pin?pincode=${getParam(p,'pin','pincode','q','query')}`,
-    'leak':         p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','term')}`,
-    'leakpro':      p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','quiry','term')}`,
+    'leakpro':         p => `${NEW_BASE}/api/leakpro?query=${getParam(p,'number','query','q','num','term')}`,
+    'leakpro':      p => `${NEW_BASE}/api/leakpro?query=${getParam(p,'number','query','q','num','quiry','term')}`,
     'ai-image':     p => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${getParam(p,'prompt','q','query')}`,
 
     // ── Mistral — handles its own response ────────────────────────────────────
