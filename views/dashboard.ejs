@@ -9,7 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
-    /* ── THEME VARS ── */
     :root {
       --bg:       #050810;
       --surface:  #090e1c;
@@ -33,180 +32,76 @@
       --muted:   #64748b;
       --muted2:  #94a3b8;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-      transition: background 0.25s, color 0.25s;
-    }
+    body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text); min-height: 100vh; overflow-x: hidden; transition: background 0.25s, color 0.25s; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-
-    /* ── GLASS ── */
-    .glass {
-      background: rgba(13,20,38,0.7);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--border);
-    }
-    [data-theme="light"] .glass {
-      background: rgba(255,255,255,0.85);
-      box-shadow: 0 1px 8px rgba(0,0,0,0.07);
-    }
-
-    /* ── GLOW ── */
+    .glass { background: rgba(13,20,38,0.7); backdrop-filter: blur(20px); border: 1px solid var(--border); }
+    [data-theme="light"] .glass { background: rgba(255,255,255,0.85); box-shadow: 0 1px 8px rgba(0,0,0,0.07); }
     .glow-cyan   { box-shadow: 0 0 40px rgba(34,211,238,0.07),  inset 0 1px 0 rgba(34,211,238,0.1); }
     .glow-indigo { box-shadow: 0 0 40px rgba(129,140,248,0.07), inset 0 1px 0 rgba(129,140,248,0.1); }
     .glow-emerald{ box-shadow: 0 0 40px rgba(52,211,153,0.07),  inset 0 1px 0 rgba(52,211,153,0.1); }
     .glow-amber  { box-shadow: 0 0 40px rgba(251,191,36,0.07),  inset 0 1px 0 rgba(251,191,36,0.1); }
-
-    /* ── GRAD BORDER ── */
     .grad-border { position: relative; }
     .grad-border::before {
-      content: '';
-      position: absolute; inset: 0;
-      border-radius: inherit; padding: 1px;
+      content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
       background: linear-gradient(135deg,rgba(34,211,238,0.3) 0%,rgba(129,140,248,0.15) 50%,rgba(34,211,238,0.05) 100%);
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor; mask-composite: exclude;
-      pointer-events: none;
+      -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
     }
-
-    /* ── SCANLINE ── */
     .scanline { position: relative; overflow: hidden; }
     .scanline::after {
       content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
       background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(34,211,238,0.012) 2px,rgba(34,211,238,0.012) 4px);
       pointer-events: none;
     }
-
-    /* ── NAV ── */
     .nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: 56px;
-      background: rgba(5,8,16,0.92); backdrop-filter: blur(24px);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; padding: 0 24px; gap: 0;
-      transition: background 0.25s;
+      background: rgba(5,8,16,0.92); backdrop-filter: blur(24px); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 24px; gap: 0; transition: background 0.25s;
     }
     [data-theme="light"] .nav { background: rgba(248,250,252,0.95); }
-
     .nav-logo { display: flex; align-items: center; gap: 10px; margin-right: auto; }
-    .nav-logo-icon {
-      width: 30px; height: 30px; border-radius: 8px;
-      background: linear-gradient(135deg, #22d3ee, #818cf8);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; color: #fff; box-shadow: 0 0 20px rgba(34,211,238,0.3);
-    }
+    .nav-logo-icon { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #22d3ee, #818cf8); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; box-shadow: 0 0 20px rgba(34,211,238,0.3); }
     .nav-logo-text { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; color: var(--text); }
     .nav-logo-text span { color: var(--cyan); }
-
     .nav-links { display: flex; align-items: center; gap: 2px; margin-right: 20px; }
-    .nav-link {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 8px;
-      font-size: 12px; font-weight: 500; color: var(--muted);
-      text-decoration: none; transition: all 0.15s;
-    }
+    .nav-link { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; color: var(--muted); text-decoration: none; transition: all 0.15s; }
     .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.04); }
     .nav-link.active { color: var(--cyan); background: rgba(34,211,238,0.08); }
     .nav-link i { font-size: 11px; }
-
     .nav-actions { display: flex; align-items: center; gap: 10px; }
-
-    /* ── THEME TOGGLE ── */
-    .theme-btn {
-      width: 32px; height: 32px; border-radius: 8px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.04);
-      color: var(--muted); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; transition: all 0.15s;
-    }
+    .theme-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.15s; }
     .theme-btn:hover { color: var(--amber); border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
-
-    .nav-user {
-      display: flex; align-items: center; gap: 8px;
-      padding: 5px 12px 5px 8px; border-radius: 10px;
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-    }
-    .nav-avatar {
-      width: 24px; height: 24px; border-radius: 6px;
-      background: linear-gradient(135deg, #818cf8, #22d3ee);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700; color: #fff;
-    }
+    .nav-user { display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 8px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); }
+    .nav-avatar { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, #818cf8, #22d3ee); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
     .nav-username { font-size: 12px; font-weight: 600; color: var(--text); font-family: 'JetBrains Mono', monospace; }
     .nav-logout { color: var(--muted); font-size: 12px; text-decoration: none; transition: color 0.15s; margin-left: 8px; }
     .nav-logout:hover { color: var(--red); }
-
-    /* ── WS LIVE BAR ── */
-    #ws-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; height: 32px;
-      background: rgba(5,8,16,0.97); border-top: 1px solid rgba(34,211,238,0.12);
-      display: flex; align-items: center; gap: 0; overflow: hidden;
-      font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    }
-    #ws-bar-label {
-      flex-shrink: 0; padding: 0 12px;
-      color: var(--cyan); font-weight: 700; letter-spacing: 0.08em;
-      border-right: 1px solid rgba(34,211,238,0.12);
-      display: flex; align-items: center; gap: 6px;
-    }
-    .ws-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--cyan); box-shadow: 0 0 6px var(--cyan);
-      animation: wsDot 1.5s ease-in-out infinite;
-    }
+    #ws-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 60; height: 32px; background: rgba(5,8,16,0.97); border-top: 1px solid rgba(34,211,238,0.12); display: flex; align-items: center; gap: 0; overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+    #ws-bar-label { flex-shrink: 0; padding: 0 12px; color: var(--cyan); font-weight: 700; letter-spacing: 0.08em; border-right: 1px solid rgba(34,211,238,0.12); display: flex; align-items: center; gap: 6px; }
+    .ws-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); animation: wsDot 1.5s ease-in-out infinite; }
     .ws-dot.off { background: var(--muted2); box-shadow: none; animation: none; }
     @keyframes wsDot { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    #ws-ticker {
-      flex: 1; display: flex; align-items: center; gap: 0;
-      overflow: hidden; white-space: nowrap;
-    }
-    .ws-event {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 0 14px; color: #64748b; border-right: 1px solid rgba(255,255,255,0.04);
-      animation: wsSlide 0.35s cubic-bezier(0.16,1,0.3,1) both;
-      flex-shrink: 0;
-    }
+    #ws-ticker { flex: 1; display: flex; align-items: center; gap: 0; overflow: hidden; white-space: nowrap; }
+    .ws-event { display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; color: #64748b; border-right: 1px solid rgba(255,255,255,0.04); animation: wsSlide 0.35s cubic-bezier(0.16,1,0.3,1) both; flex-shrink: 0; }
     .ws-event .ws-ep { color: var(--indigo); }
     .ws-event .ws-key { color: var(--muted2); }
     .ws-event .ws-time { color: var(--muted2); }
     @keyframes wsSlide { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
     #ws-count { padding: 0 12px; color: var(--emerald); font-weight: 700; border-left: 1px solid rgba(34,211,238,0.12); flex-shrink: 0; }
-
-    /* ── MAIN ── */
     .main { padding: 72px 28px 48px; max-width: 1440px; margin: 0 auto; }
-
-    /* ── PAGE HEADER ── */
     .page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; }
     .page-title { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.03em; }
     .page-sub { font-size: 12px; color: var(--muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
-    .btn-primary {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 9px 18px; border-radius: 10px;
-      background: linear-gradient(135deg, #22d3ee, #818cf8);
-      color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
-      border: none; cursor: pointer; transition: all 0.2s;
-      box-shadow: 0 4px 20px rgba(34,211,238,0.25);
-    }
+    .btn-primary { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 10px; background: linear-gradient(135deg, #22d3ee, #818cf8); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 20px rgba(34,211,238,0.25); }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(34,211,238,0.35); }
     .btn-primary i { font-size: 11px; }
-
-    /* ── STAT CARDS ── */
     .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
     @media(max-width:900px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
-    .stat-card {
-      border-radius: 16px; padding: 20px; position: relative; overflow: hidden;
-    }
-    .stat-card::after {
-      content: ''; position: absolute; top: -30px; right: -30px;
-      width: 80px; height: 80px; border-radius: 50%; opacity: 0.06;
-    }
+    .stat-card { border-radius: 16px; padding: 20px; position: relative; overflow: hidden; }
+    .stat-card::after { content: ''; position: absolute; top: -30px; right: -30px; width: 80px; height: 80px; border-radius: 50%; opacity: 0.06; }
     .stat-card.c-cyan::after   { background: var(--cyan); }
     .stat-card.c-indigo::after { background: var(--indigo); }
     .stat-card.c-emerald::after{ background: var(--emerald); }
@@ -215,8 +110,6 @@
     .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
     .stat-sub { font-size: 11px; color: var(--muted2); }
     .stat-icon { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
-
-    /* ── CHARTS ── */
     .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 20px; }
     @media(max-width:900px){ .charts-grid{ grid-template-columns:1fr; } }
     .chart-card { border-radius: 16px; padding: 22px; }
@@ -225,42 +118,24 @@
     .chart-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .chart-link { font-size: 11px; color: var(--cyan); text-decoration: none; display: flex; align-items: center; gap: 4px; opacity: 0.8; }
     .chart-link:hover { opacity: 1; }
-
-    /* ── HEATMAP ── */
     .heatmap-card { border-radius: 16px; padding: 22px; margin-bottom: 20px; }
     .heatmap-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .heatmap-title { font-size: 13px; font-weight: 700; color: var(--text); }
     .heatmap-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    #heatmap-grid {
-      display: grid; grid-template-rows: repeat(7, 12px);
-      grid-auto-flow: column; gap: 3px;
-      overflow-x: auto; padding-bottom: 4px;
-    }
-    .hm-cell {
-      width: 12px; height: 12px; border-radius: 2px;
-      background: rgba(34,211,238,0.06);
-      position: relative; cursor: default;
-      transition: transform 0.12s;
-    }
+    #heatmap-grid { display: grid; grid-template-rows: repeat(7, 12px); grid-auto-flow: column; gap: 3px; overflow-x: auto; padding-bottom: 4px; }
+    .hm-cell { width: 12px; height: 12px; border-radius: 2px; background: rgba(34,211,238,0.06); position: relative; cursor: default; transition: transform 0.12s; }
     .hm-cell:hover { transform: scale(1.4); z-index: 1; }
     .hm-cell[data-level="1"] { background: rgba(34,211,238,0.18); }
     .hm-cell[data-level="2"] { background: rgba(34,211,238,0.38); }
     .hm-cell[data-level="3"] { background: rgba(34,211,238,0.62); }
     .hm-cell[data-level="4"] { background: rgba(34,211,238,0.88); }
-    .hm-tooltip {
-      display: none; position: fixed; z-index: 200;
-      background: #0d1426; border: 1px solid rgba(34,211,238,0.2);
-      border-radius: 7px; padding: 6px 10px;
-      font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text);
-      pointer-events: none; white-space: nowrap;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-    }
-    .hm-day-labels { display: flex; margin-bottom: 6px; gap: 3px; }
-    .hm-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted2); white-space: nowrap; }
+    .hm-tooltip { display: none; position: fixed; z-index: 200; background: #0d1426; border: 1px solid rgba(34,211,238,0.2); border-radius: 7px; padding: 6px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text); pointer-events: none; white-space: nowrap; box-shadow: 0 6px 20px rgba(0,0,0,0.5); }
     .hm-legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
     .hm-legend-cell { width: 12px; height: 12px; border-radius: 2px; }
-
-    /* ── HEALTH + ACTIVITY ── */
+    .hm-legend-cell[data-level="1"] { background: rgba(34,211,238,0.18); }
+    .hm-legend-cell[data-level="2"] { background: rgba(34,211,238,0.38); }
+    .hm-legend-cell[data-level="3"] { background: rgba(34,211,238,0.62); }
+    .hm-legend-cell[data-level="4"] { background: rgba(34,211,238,0.88); }
     .health-activity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
     @media(max-width:900px){ .health-activity-grid{ grid-template-columns:1fr; } }
     .hs-card { border-radius: 16px; overflow: hidden; }
@@ -287,16 +162,12 @@
     .activity-code.err { color: var(--red); background: rgba(248,113,113,0.1); }
     .activity-time { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); white-space: nowrap; }
     .activity-empty { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 40px 0; color: var(--muted2); font-size: 12px; }
-
-    /* ── BANNER ── */
     .banner { border-radius: 14px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; }
     .banner-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
     .banner input { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 14px; font-size: 12px; color: var(--text); outline: none; transition: border-color 0.15s; font-family: 'JetBrains Mono', monospace; }
     .banner input:focus { border-color: rgba(251,191,36,0.4); }
     .banner-btn { padding: 8px 16px; border-radius: 8px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2); color: var(--amber); font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
     .banner-btn:hover { background: rgba(251,191,36,0.18); }
-
-    /* ── TABLE CARD ── */
     .table-card { border-radius: 16px; overflow: hidden; }
     .table-head-bar { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .table-title-group { display: flex; align-items: center; gap: 10px; }
@@ -307,8 +178,6 @@
     .search-wrap input { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 9px; padding: 7px 12px 7px 30px; font-size: 12px; color: var(--text); outline: none; width: 220px; transition: border-color 0.15s; }
     .search-wrap input:focus { border-color: rgba(34,211,238,0.3); }
     .search-wrap input::placeholder { color: var(--muted2); }
-
-    /* ── TABLE ── */
     table { width: 100%; border-collapse: collapse; }
     thead tr { border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.015); }
     thead th { padding: 11px 16px; font-size: 10px; font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted2); }
@@ -316,11 +185,11 @@
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: rgba(255,255,255,0.018); }
     td { padding: 13px 16px; font-size: 12px; vertical-align: middle; }
-
-    /* ── KEY BADGE ── */
     .key-badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; color: var(--cyan); background: rgba(34,211,238,0.06); border: 1px solid rgba(34,211,238,0.15); padding: 4px 10px; border-radius: 6px; letter-spacing: 0.04em; }
-
-    /* ── HIT PROGRESS BAR ── */
+    .usage-pill { display: inline-flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 3px; }
+    .usage-pill.unlimited  { color: var(--emerald); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); }
+    .usage-pill.onetime    { color: var(--indigo); background: rgba(129,140,248,0.08); border: 1px solid rgba(129,140,248,0.2); }
+    .usage-pill.ratelimited{ color: var(--cyan); background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); }
     .hits-bar-wrap { margin-top: 5px; }
     .hits-bar-track { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden; width: 100px; }
     .hits-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease, background 0.4s ease; }
@@ -328,18 +197,8 @@
     .hits-bar-fill.lvl-mid    { background: var(--amber); }
     .hits-bar-fill.lvl-high   { background: var(--red); box-shadow: 0 0 6px rgba(248,113,113,0.4); }
     .hits-bar-sub { font-size: 9px; color: var(--muted2); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
-
-    /* ── EXPIRY WARNING ── */
-    .expiry-warn {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
-      color: var(--amber); background: rgba(251,191,36,0.1);
-      border: 1px solid rgba(251,191,36,0.25); padding: 2px 6px; border-radius: 4px;
-      margin-left: 6px; animation: expPulse 2s ease-in-out infinite;
-    }
+    .expiry-warn { display: inline-flex; align-items: center; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; color: var(--amber); background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25); padding: 2px 6px; border-radius: 4px; margin-left: 6px; animation: expPulse 2s ease-in-out infinite; }
     @keyframes expPulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
-
-    /* ── STATUS BADGES ── */
     .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
     .badge-active  { background: rgba(52,211,153,0.08); color: var(--emerald); border: 1px solid rgba(52,211,153,0.2); }
     .badge-disabled{ background: rgba(248,113,113,0.08); color: var(--red);     border: 1px solid rgba(248,113,113,0.2); }
@@ -349,32 +208,19 @@
     .dot-disabled{ background: var(--red); }
     .dot-expired { background: var(--amber); }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-    /* ── ENDPOINT BADGE ── */
     .ep-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--indigo); background: rgba(129,140,248,0.08); border: 1px solid rgba(129,140,248,0.15); padding: 3px 9px; border-radius: 5px; }
-
-    /* ── NOTE BADGE ── */
+    .ep-badge-warn { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--amber); background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); padding: 2px 7px; border-radius: 4px; margin-left: 4px; display: inline-flex; align-items: center; gap: 3px; }
     .note-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--amber); background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15); padding: 2px 7px; border-radius: 4px; margin-top: 4px; }
-
-    /* ── ACTION BUTTONS ── */
     .action-btn { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 11px; transition: all 0.15s; }
     .action-btn:hover.edit   { background: rgba(129,140,248,0.12); border-color: rgba(129,140,248,0.3); color: var(--indigo); }
     .action-btn:hover.delete { background: rgba(248,113,113,0.1);  border-color: rgba(248,113,113,0.3); color: var(--red); }
     .action-btn:hover.dupe   { background: rgba(34,211,238,0.1);   border-color: rgba(34,211,238,0.3);  color: var(--cyan); }
-
-    /* ── OWNER COL ── */
     .owner-name { font-weight: 600; color: var(--text); font-size: 13px; }
     .owner-handle { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); margin-top: 2px; }
-
-    /* ── HITS DISPLAY ── */
     .hits-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--text); font-size: 13px; }
-
-    /* ── EXPIRY ── */
     .expiry-val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #94a3b8; }
     .expiry-time { font-size: 10px; color: var(--muted2); margin-top: 1px; }
     .expiry-expired { color: var(--red); text-decoration: line-through; }
-
-    /* ── MODAL ── */
     .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
     .modal-overlay.open { display: flex; }
     .modal { background: #0a0f1e; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; width: 100%; max-width: 500px; box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(34,211,238,0.05); }
@@ -385,12 +231,14 @@
     .modal-close { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.15s; }
     .modal-close:hover { background: rgba(255,255,255,0.05); color: #94a3b8; }
     .modal-body { padding: 22px; }
+    .modal-body::-webkit-scrollbar { width: 4px; }
     .form-group { margin-bottom: 16px; }
     .form-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
     .form-input, .form-select { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 9px 14px; font-size: 12px; color: var(--text); outline: none; transition: border-color 0.15s; font-family: 'Plus Jakarta Sans', sans-serif; appearance: none; }
     .form-input:focus, .form-select:focus { border-color: rgba(34,211,238,0.4); background: rgba(34,211,238,0.02); }
     .form-select option { background: #0d1426; }
     .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     .form-section { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px; }
     .form-section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted2); margin-bottom: 12px; }
     .toggle-row { display: flex; align-items: center; justify-content: space-between; }
@@ -401,24 +249,47 @@
     .btn-modal-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 26px rgba(34,211,238,0.3); }
     .btn-modal-edit { background: rgba(129,140,248,0.15); color: var(--indigo); border: 1px solid rgba(129,140,248,0.25); }
     .btn-modal-edit:hover { background: rgba(129,140,248,0.22); }
-
-    /* ── SEGMENTED TOGGLE ── */
     .seg-toggle { display: inline-flex; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; }
     .seg-btn { padding: 4px 11px; border-radius: 6px; border: none; background: transparent; color: #64748b; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Plus Jakarta Sans', sans-serif; }
     .seg-btn:hover { color: #94a3b8; }
     .seg-btn.active { background: linear-gradient(135deg, var(--cyan), var(--indigo)); color: #fff; }
-
-    /* ── ACCESS HINT ── */
+    .usage-seg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+    .usage-seg-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .usage-seg-btn i { font-size: 14px; }
+    .usage-seg-btn span { font-size: 10px; font-weight: 700; letter-spacing: 0.02em; }
+    .usage-seg-btn:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+    .usage-seg-btn.active[data-usage="unlimited"]   { background: rgba(52,211,153,0.1);  border-color: rgba(52,211,153,0.4);  color: var(--emerald); }
+    .usage-seg-btn.active[data-usage="ratelimited"]  { background: rgba(34,211,238,0.1);  border-color: rgba(34,211,238,0.4);  color: var(--cyan); }
+    .usage-seg-btn.active[data-usage="onetime"]      { background: rgba(129,140,248,0.1); border-color: rgba(129,140,248,0.4); color: var(--indigo); }
+    .usage-hint { font-size: 11px; color: var(--muted2); margin-bottom: 12px; padding: 8px 12px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid var(--border); }
     .access-hint { background: rgba(52,211,153,0.05); border: 1px solid rgba(52,211,153,0.15); border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
-
-    /* ── CHECKBOX GRID ── */
     .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 200px; overflow-y: auto; padding: 4px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; }
     .check-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; cursor: pointer; transition: background 0.12s; font-size: 11px; color: #94a3b8; }
     .check-item:hover { background: rgba(255,255,255,0.03); }
     .check-item input { accent-color: var(--cyan); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
     .check-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* ── API MANAGEMENT ── */
+    .override-list { max-height: 260px; overflow-y: auto; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
+    .override-row { display: flex; align-items: center; gap: 10px; padding: 8px 8px; border-radius: 8px; transition: background 0.12s; }
+    .override-row:hover { background: rgba(255,255,255,0.025); }
+    .override-row.is-off { background: rgba(248,113,113,0.04); }
+    .override-emoji { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+    .override-name { font-size: 11.5px; color: var(--text); font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .override-state { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; width: 34px; text-align: right; flex-shrink: 0; }
+    .override-state.on  { color: var(--emerald); }
+    .override-state.off { color: var(--red); }
+    .override-msg-wrap { grid-column: 1 / -1; margin-top: 6px; }
+    .override-msg { width: 100%; background: rgba(248,113,113,0.05); border: 1px solid rgba(248,113,113,0.2); border-radius: 8px; padding: 7px 10px; font-size: 11px; color: var(--text); outline: none; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .override-msg:focus { border-color: rgba(248,113,113,0.5); }
+    .override-msg::placeholder { color: var(--muted2); }
+    .override-row-inner { display: flex; flex-direction: column; width: 100%; gap: 6px; }
+    .override-row-top { display: flex; align-items: center; gap: 10px; width: 100%; }
+    .override-toggle-mini { position: relative; display: inline-flex; cursor: pointer; flex-shrink: 0; }
+    .override-toggle-mini input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .ot-track { width: 32px; height: 18px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 99px; position: relative; transition: all 0.2s; }
+    .override-toggle-mini input:checked + .ot-track { background: rgba(52,211,153,0.2); border-color: rgba(52,211,153,0.4); }
+    .ot-thumb { position: absolute; top: 1px; left: 1px; width: 14px; height: 14px; background: #f87171; border-radius: 50%; transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+    .override-toggle-mini input:checked + .ot-track .ot-thumb { left: 15px; background: var(--emerald); }
+    .override-count-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted2); background: var(--panel); border: 1px solid var(--border); padding: 2px 8px; border-radius: 20px; }
     .api-mgmt-wrap { margin-top: 20px; background: rgba(13,20,38,0.7); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
     [data-theme="light"] .api-mgmt-wrap { background: rgba(255,255,255,0.85); }
     .api-mgmt-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
@@ -438,7 +309,6 @@
     .flt-dot { width: 7px; height: 7px; border-radius: 50%; }
     .flt-dot.on  { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
     .flt-dot.off { background: var(--red); }
-
     .api-stats-strip { display: flex; align-items: center; gap: 10px; padding: 12px 24px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.15); flex-wrap: wrap; }
     .api-stat-pill { display: flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; border: 1px solid; }
     .pill-emerald { color: var(--emerald); background: rgba(52,211,153,0.07); border-color: rgba(52,211,153,0.18); }
@@ -449,7 +319,6 @@
     .bulk-on:hover  { background: rgba(52,211,153,0.16); }
     .bulk-off { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); color: var(--red); margin-left: 0; }
     .bulk-off:hover { background: rgba(248,113,113,0.16); }
-
     .api-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(195px,1fr)); gap: 1px; background: var(--border); }
     .api-card-item { background: var(--panel); padding: 18px; transition: background 0.2s; display: flex; flex-direction: column; gap: 8px; }
     .api-card-item:hover { background: rgba(15,24,44,0.95); }
@@ -478,22 +347,16 @@
     .api-empty { padding: 48px; text-align: center; color: var(--muted2); }
     .api-empty i { font-size: 28px; margin-bottom: 10px; display: block; }
     .api-empty p { font-size: 13px; }
-
-    /* ── TOAST ── */
     .toast { position: fixed; bottom: 44px; right: 24px; z-index: 200; background: #0d1426; border: 1px solid rgba(52,211,153,0.3); border-radius: 12px; padding: 12px 18px; display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; color: var(--emerald); box-shadow: 0 10px 40px rgba(0,0,0,0.5),0 0 20px rgba(52,211,153,0.1); transform: translateY(80px); opacity: 0; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); pointer-events: none; }
     .toast.show { transform: translateY(0); opacity: 1; }
-
-    /* ── EMPTY STATE ── */
     .empty-state { text-align: center; padding: 60px 20px; color: var(--muted2); }
     .empty-state i { font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.3; }
     .empty-state p { font-size: 13px; }
-
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-<!-- ── NAV ────────────────────────────────────────────── -->
 <nav class="nav scanline">
   <div class="nav-logo">
     <div class="nav-logo-icon"><i class="fa-solid fa-satellite-dish"></i></div>
@@ -517,10 +380,8 @@
   </div>
 </nav>
 
-<!-- ── MAIN ────────────────────────────────────────────── -->
 <main class="main">
 
-  <!-- Page Header -->
   <div class="page-header">
     <div>
       <div class="page-title">Command Center</div>
@@ -531,7 +392,6 @@
     </button>
   </div>
 
-  <!-- Stats -->
   <div class="stats-grid">
     <div class="stat-card glass grad-border glow-indigo c-indigo">
       <div class="stat-label">Total Keys</div>
@@ -559,7 +419,6 @@
     </div>
   </div>
 
-  <!-- Charts -->
   <div class="charts-grid">
     <div class="chart-card glass">
       <div class="chart-head">
@@ -582,7 +441,6 @@
     </div>
   </div>
 
-  <!-- Heatmap — 8 weeks of daily hit density -->
   <div class="heatmap-card glass">
     <div class="heatmap-head">
       <div>
@@ -604,7 +462,6 @@
   </div>
   <div class="hm-tooltip" id="hmTooltip"></div>
 
-  <!-- System Health + Recent Activity -->
   <div class="health-activity-grid">
     <div class="hs-card glass">
       <div class="hs-head">
@@ -665,7 +522,6 @@
     </div>
   </div>
 
-  <!-- Maintenance Banner -->
   <form action="/admin/update-settings" method="POST">
     <div class="banner glass">
       <div class="banner-label"><i class="fa-solid fa-triangle-exclamation"></i> Banner</div>
@@ -674,7 +530,6 @@
     </div>
   </form>
 
-  <!-- Keys Table -->
   <div class="table-card glass">
     <div class="table-head-bar">
       <div class="table-title-group">
@@ -709,9 +564,14 @@
               var maxHits = key.max_hits || 0;
               var hitPct  = (!key.unlimited_hits && maxHits > 0) ? Math.min(100, Math.round((key.hits / maxHits) * 100)) : 0;
               var barLevel = hitPct >= 85 ? 'lvl-high' : hitPct >= 50 ? 'lvl-mid' : 'lvl-low';
-              // expiry warning: < 24h remaining
               var hoursLeft = exp && !isExpired ? Math.floor((exp - new Date()) / 3600000) : null;
               var showWarn  = hoursLeft !== null && hoursLeft < 24;
+              var usageMode = key.unlimited_hits ? 'unlimited' : (maxHits === 1 ? 'onetime' : 'ratelimited');
+              var usageLabel = usageMode === 'unlimited' ? 'Unlimited' : usageMode === 'onetime' ? 'One-Time' : 'Rate Limited';
+              var usageIcon  = usageMode === 'unlimited' ? 'fa-infinity' : usageMode === 'onetime' ? 'fa-bolt' : 'fa-gauge';
+              var overridesObj = {};
+              try { overridesObj = JSON.parse(key.api_overrides || '{}'); } catch(e){}
+              var overrideOffCount = Object.keys(overridesObj).filter(function(k){ return overridesObj[k] && overridesObj[k].enabled === false; }).length;
             %>
             <tr>
               <td>
@@ -727,20 +587,25 @@
                   <button onclick="copyKey('<%= key.key %>')" class="action-btn" style="border:none" title="Copy"><i class="fa-regular fa-copy"></i></button>
                 </div>
               </td>
-              <td><span class="ep-badge"><%= allowed %></span></td>
+              <td>
+                <span class="ep-badge"><%= allowed %></span>
+                <% if(overrideOffCount > 0) { %>
+                  <span class="ep-badge-warn" title="<%= overrideOffCount %> API(s) turned off for this key"><i class="fa-solid fa-ban" style="font-size:8px"></i> <%= overrideOffCount %> off</span>
+                <% } %>
+              </td>
               <td>
                 <div class="hits-val"><%= key.hits.toLocaleString() %></div>
-                <% if(!key.unlimited_hits && maxHits > 0) { %>
+                <span class="usage-pill <%= usageMode %>"><i class="fa-solid <%= usageIcon %>" style="font-size:8px"></i> <%= usageLabel %></span>
+                <% if(usageMode === 'ratelimited' && maxHits > 0) { %>
                   <div class="hits-bar-wrap">
                     <div class="hits-bar-track">
                       <div class="hits-bar-fill <%= barLevel %>" style="width:<%= hitPct %>%"></div>
                     </div>
                     <div class="hits-bar-sub"><%= key.hits %> / <%= maxHits %> (<%= hitPct %>%)</div>
                   </div>
-                <% } else { %>
+                <% } else if(usageMode === 'ratelimited') { %>
                   <div style="font-size:10px;color:var(--muted2);margin-top:3px;font-family:'JetBrains Mono',monospace">
-                    <% if(key.unlimited_hits){ %><span style="color:var(--emerald)"><i class="fa-solid fa-infinity"></i> unlimited</span>
-                    <%} else if(key.rate_limit_enabled){ %><%= key.rate_limit_per_day %>/day<%} else {%>standard<%}%>
+                    <% if(key.rate_limit_enabled){ %><%= key.rate_limit_per_day %>/day<%} else {%>standard<%}%>
                   </div>
                 <% } %>
               </td>
@@ -778,10 +643,12 @@
                     data-name="<%= encodeURIComponent(key.name||'') %>"
                     data-enabled="<%= key.api_enabled %>"
                     data-unlimited="<%= key.unlimited_hits %>"
+                    data-maxhits="<%= maxHits %>"
                     data-allowed="<%= encodeURIComponent(key.allowed_apis||'') %>"
                     data-rl-day="<%= key.rate_limit_per_day %>"
                     data-rl-min="<%= key.rate_limit_per_minute %>"
                     data-note="<%= encodeURIComponent(key.key_note||'') %>"
+                    data-overrides="<%= encodeURIComponent(key.api_overrides||'{}') %>"
                     class="action-btn edit" title="Edit">
                     <i class="fa-solid fa-pen-to-square"></i>
                   </button>
@@ -811,14 +678,13 @@
     </div>
   </div>
 
-  <!-- API Management -->
   <div class="api-mgmt-wrap">
     <div class="api-mgmt-header">
       <div class="api-mgmt-title-group">
         <div class="api-mgmt-icon"><i class="fa-solid fa-cubes-stacked"></i></div>
         <div>
           <div class="api-mgmt-title">Endpoint Control</div>
-          <div class="api-mgmt-sub">Toggle live availability of every module</div>
+          <div class="api-mgmt-sub">Toggle live availability of every module (global — affects all keys)</div>
         </div>
       </div>
       <div class="api-mgmt-controls">
@@ -897,7 +763,6 @@
     </div>
   </div>
 
-  <!-- Offline Message Modal -->
   <div class="modal-overlay" id="msgModal">
     <div class="modal" style="max-width:420px">
       <div class="modal-header">
@@ -919,7 +784,6 @@
 
 </main>
 
-<!-- ── WS LIVE BAR ─────────────────────────────────────── -->
 <div id="ws-bar">
   <div id="ws-bar-label">
     <span class="ws-dot" id="ws-dot"></span>
@@ -929,7 +793,6 @@
   <div id="ws-count">0 hits</div>
 </div>
 
-<!-- ── GENERATE MODAL ─────────────────────────────────── -->
 <div id="generateModal" class="modal-overlay">
   <div class="modal">
     <div class="modal-header">
@@ -975,6 +838,44 @@
             <%});%>
           </div>
         </div>
+
+        <div class="form-group">
+          <label class="form-label">Usage Mode</label>
+          <div class="usage-seg">
+            <div class="usage-seg-btn" data-usage="unlimited" onclick="setUsageMode('gen','unlimited')">
+              <i class="fa-solid fa-infinity"></i><span>Unlimited</span>
+            </div>
+            <div class="usage-seg-btn active" data-usage="ratelimited" onclick="setUsageMode('gen','ratelimited')">
+              <i class="fa-solid fa-gauge"></i><span>Rate Limited</span>
+            </div>
+            <div class="usage-seg-btn" data-usage="onetime" onclick="setUsageMode('gen','onetime')">
+              <i class="fa-solid fa-bolt"></i><span>One-Time</span>
+            </div>
+          </div>
+          <div class="usage-hint" id="gen-usage-hint">This key follows the daily / per-minute / total-request limits below.</div>
+
+          <input type="hidden" name="unlimited_hits" value="true" id="gen-unlimited-input" disabled>
+          <input type="hidden" name="one_time" value="true" id="gen-onetime-input" disabled>
+
+          <div class="form-section" id="gen-ratelimit-box" style="margin-bottom:0">
+            <div class="form-section-label">Limits</div>
+            <div class="form-grid-3">
+              <div>
+                <label class="form-label">Daily</label>
+                <input type="number" name="rate_limit_per_day" value="100" class="form-input" style="text-align:center">
+              </div>
+              <div>
+                <label class="form-label">Per Minute</label>
+                <input type="number" name="rate_limit_per_minute" value="5" class="form-input" style="text-align:center">
+              </div>
+              <div>
+                <label class="form-label">Total Cap</label>
+                <input type="number" name="max_hits" value="0" min="0" class="form-input" style="text-align:center" placeholder="0=∞">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-grid-2" style="margin-bottom:16px">
           <div>
             <label class="form-label">Validity</label>
@@ -987,11 +888,8 @@
             </select>
           </div>
           <div>
-            <label class="form-label">Usage</label>
-            <select name="unlimited_hits" class="form-select">
-              <option value="false">Rate Limited</option>
-              <option value="true">Unlimited</option>
-            </select>
+            <label class="form-label">Note (optional)</label>
+            <input type="text" name="key_note" placeholder="e.g. VIP access" class="form-input">
           </div>
         </div>
         <div id="customExpiryContainer" class="form-grid-2 hidden" style="margin-bottom:16px">
@@ -1004,53 +902,19 @@
             <input type="time" name="custom_expiry_time" value="23:59" class="form-input">
           </div>
         </div>
-        <div class="form-section">
-          <div class="form-section-label">Rate Limits</div>
-          <div class="form-grid-2">
-            <div>
-              <label class="form-label">Daily</label>
-              <input type="number" name="rate_limit_per_day" value="100" class="form-input" style="text-align:center">
-            </div>
-            <div>
-              <label class="form-label">Per Minute</label>
-              <input type="number" name="rate_limit_per_minute" value="5" class="form-input" style="text-align:center">
-            </div>
-          </div>
-        </div>
-        <div class="form-section">
-          <div class="form-section-label">Max Hits (Hit-Count Expiry)</div>
-          <div class="form-grid-2">
-            <div>
-              <label class="form-label">Max Hits (0 = unlimited)</label>
-              <input type="number" name="max_hits" value="0" min="0" class="form-input" style="text-align:center">
-            </div>
-            <div>
-              <label class="form-label">One-Time Key</label>
-              <select name="one_time" class="form-select">
-                <option value="false">No</option>
-                <option value="true">Yes (max_hits=1)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Note (optional)</label>
-          <input type="text" name="key_note" placeholder="e.g. VIP access" class="form-input">
-        </div>
         <button type="submit" class="btn-modal btn-modal-primary">Generate Key</button>
       </form>
     </div>
   </div>
 </div>
 
-<!-- ── EDIT MODAL ─────────────────────────────────────── -->
 <div id="editModal" class="modal-overlay">
-  <div class="modal">
+  <div class="modal" style="max-width:540px">
     <div class="modal-header">
       <div class="modal-title"><i class="fa-solid fa-sliders"></i> Edit Key</div>
       <button class="modal-close" onclick="closeModal('editModal')"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="max-height:75vh;overflow-y:auto">
       <form id="editKeyForm" onsubmit="submitEditKey(event)">
         <input type="hidden" id="edit_key_id" name="key_id">
         <div class="form-group">
@@ -1082,6 +946,44 @@
             <%});%>
           </div>
         </div>
+
+        <div class="form-group">
+          <label class="form-label">Usage Mode</label>
+          <div class="usage-seg">
+            <div class="usage-seg-btn" data-usage="unlimited" onclick="setUsageMode('edit','unlimited')">
+              <i class="fa-solid fa-infinity"></i><span>Unlimited</span>
+            </div>
+            <div class="usage-seg-btn active" data-usage="ratelimited" onclick="setUsageMode('edit','ratelimited')">
+              <i class="fa-solid fa-gauge"></i><span>Rate Limited</span>
+            </div>
+            <div class="usage-seg-btn" data-usage="onetime" onclick="setUsageMode('edit','onetime')">
+              <i class="fa-solid fa-bolt"></i><span>One-Time</span>
+            </div>
+          </div>
+          <div class="usage-hint" id="edit-usage-hint">This key follows the daily / per-minute / total-request limits below.</div>
+
+          <input type="hidden" name="unlimited_hits" value="true" id="edit-unlimited-input" disabled>
+          <input type="hidden" name="one_time" value="true" id="edit-onetime-input" disabled>
+
+          <div class="form-section" id="edit-ratelimit-box" style="margin-bottom:0">
+            <div class="form-section-label">Limits</div>
+            <div class="form-grid-3">
+              <div>
+                <label class="form-label">Daily</label>
+                <input type="number" id="edit_rate_limit_per_day" name="rate_limit_per_day" class="form-input" style="text-align:center">
+              </div>
+              <div>
+                <label class="form-label">Per Minute</label>
+                <input type="number" id="edit_rate_limit_per_minute" name="rate_limit_per_minute" class="form-input" style="text-align:center">
+              </div>
+              <div>
+                <label class="form-label">Total Cap</label>
+                <input type="number" id="edit_max_hits" name="max_hits" min="0" class="form-input" style="text-align:center" placeholder="0=∞">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-grid-2" style="margin-bottom:16px">
           <div>
             <label class="form-label">Key Status</label>
@@ -1091,55 +993,53 @@
             </select>
           </div>
           <div>
-            <label class="form-label">Usage</label>
-            <select id="edit_unlimited_hits" name="unlimited_hits" class="form-select">
-              <option value="false">Rate Limited</option>
-              <option value="true">Unlimited</option>
-            </select>
+            <label class="form-label">Note</label>
+            <input type="text" id="edit_key_note" name="key_note" placeholder="Optional note..." class="form-input">
           </div>
         </div>
-        <div class="form-section">
-          <div class="form-section-label">Rate Limits</div>
-          <div class="form-grid-2">
-            <div>
-              <label class="form-label">Daily</label>
-              <input type="number" id="edit_rate_limit_per_day" name="rate_limit_per_day" class="form-input" style="text-align:center">
-            </div>
-            <div>
-              <label class="form-label">Per Minute</label>
-              <input type="number" id="edit_rate_limit_per_minute" name="rate_limit_per_minute" class="form-input" style="text-align:center">
-            </div>
-          </div>
-        </div>
+
         <div class="form-group">
-          <label class="form-label">Note</label>
-          <input type="text" id="edit_key_note" name="key_note" placeholder="Optional note..." class="form-input">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <label class="form-label" style="margin-bottom:0">Per-API Override <span style="color:var(--muted2);font-weight:500;text-transform:none;letter-spacing:0">(this key only)</span></label>
+            <span class="override-count-badge" id="overrideOffBadge">0 off</span>
+          </div>
+          <div class="override-list" id="edit-override-list">
+            <% apis.forEach(function(api){ %>
+              <div class="override-row" data-api="<%= api.name %>">
+                <div class="override-row-inner">
+                  <div class="override-row-top">
+                    <span class="override-emoji"><%= api.display_name.split(' ')[0] %></span>
+                    <span class="override-name"><%= api.display_name.replace(/^\S+\s/, '') %></span>
+                    <span class="override-state on">ON</span>
+                    <label class="override-toggle-mini">
+                      <input type="checkbox" checked class="override-toggle" onchange="toggleOverrideRow(this)">
+                      <span class="ot-track"><span class="ot-thumb"></span></span>
+                    </label>
+                  </div>
+                  <div class="override-msg-wrap hidden">
+                    <input type="text" class="override-msg" placeholder="Custom message shown for this key when off — e.g. 'Upgrade your plan for Instagram lookups'">
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          </div>
         </div>
+
         <button type="submit" class="btn-modal btn-modal-edit">Update Key</button>
       </form>
     </div>
   </div>
 </div>
 
-<!-- ── TOAST ── -->
 <div class="toast" id="toast">
   <i class="fa-solid fa-check"></i>
   <span id="toastMsg">Copied!</span>
 </div>
 
-<!-- ── LEGEND CELLS COLOR ── -->
-<style>
-  .hm-legend-cell[data-level="1"] { background: rgba(34,211,238,0.18); }
-  .hm-legend-cell[data-level="2"] { background: rgba(34,211,238,0.38); }
-  .hm-legend-cell[data-level="3"] { background: rgba(34,211,238,0.62); }
-  .hm-legend-cell[data-level="4"] { background: rgba(34,211,238,0.88); }
-</style>
-
 <script>
 var dailyVolumeData  = <%- JSON.stringify(dailyVolume  || []) %>;
 var topEndpointsData = <%- JSON.stringify(topEndpoints || []) %>;
 
-// ── CHARTS ─────────────────────────────────────────────
 new Chart(document.getElementById('dailyChart'), {
   type: 'line',
   data: {
@@ -1184,13 +1084,12 @@ new Chart(document.getElementById('endpointsChart'), {
   }
 });
 
-// ── HEATMAP ────────────────────────────────────────────
 (function(){
-  var grid      = document.getElementById('heatmap-grid');
-  var tooltip   = document.getElementById('hmTooltip');
-  var peakEl    = document.getElementById('hm-peak');
-  var DAYS      = 56; // 8 weeks
-  var today     = new Date();
+  var grid    = document.getElementById('heatmap-grid');
+  var tooltip = document.getElementById('hmTooltip');
+  var peakEl  = document.getElementById('hm-peak');
+  var DAYS    = 56;
+  var today   = new Date();
   today.setHours(0,0,0,0);
 
   fetch('/admin/heatmap-data')
@@ -1203,9 +1102,8 @@ new Chart(document.getElementById('endpointsChart'), {
       var peakDate = rows.reduce(function(a,b){ return b.total > a.total ? b : a; }, {total:0, date:'—'});
       if (peakEl) peakEl.textContent = 'peak: ' + peakDate.date + ' · ' + peakDate.total + ' hits';
 
-      // build from the most recent Sunday going back DAYS days
       var startDate = new Date(today);
-      var dow = startDate.getDay(); // 0=Sun
+      var dow = startDate.getDay();
       startDate.setDate(startDate.getDate() - dow - (DAYS - 7));
 
       grid.innerHTML = '';
@@ -1220,7 +1118,6 @@ new Chart(document.getElementById('endpointsChart'), {
         if (level > 0) cell.setAttribute('data-level', level);
         cell.setAttribute('data-date', key);
         cell.setAttribute('data-count', val);
-        // tooltip on hover
         cell.addEventListener('mouseenter', function(e){
           var r = e.target.getBoundingClientRect();
           tooltip.textContent = e.target.getAttribute('data-date') + ' — ' + e.target.getAttribute('data-count') + ' hits';
@@ -1235,7 +1132,6 @@ new Chart(document.getElementById('endpointsChart'), {
     .catch(function(e){ console.warn('Heatmap fetch:', e); });
 })();
 
-// ── DARK / LIGHT TOGGLE ────────────────────────────────
 (function(){
   var html   = document.documentElement;
   var btn    = document.getElementById('themeToggle');
@@ -1252,12 +1148,11 @@ new Chart(document.getElementById('endpointsChart'), {
   });
 })();
 
-// ── WEBSOCKET LIVE FEED ────────────────────────────────
 (function(){
-  var ticker   = document.getElementById('ws-ticker');
-  var dot      = document.getElementById('ws-dot');
-  var countEl  = document.getElementById('ws-count');
-  var total    = 0;
+  var ticker  = document.getElementById('ws-ticker');
+  var dot     = document.getElementById('ws-dot');
+  var countEl = document.getElementById('ws-count');
+  var total   = 0;
   var MAX_EVENTS = 12;
 
   var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1265,13 +1160,8 @@ new Chart(document.getElementById('endpointsChart'), {
 
   function connect() {
     ws = new WebSocket(proto + '//' + location.host + '/ws/hits');
-    ws.onopen = function(){
-      dot.classList.remove('off');
-    };
-    ws.onclose = function(){
-      dot.classList.add('off');
-      setTimeout(connect, 3000);
-    };
+    ws.onopen = function(){ dot.classList.remove('off'); };
+    ws.onclose = function(){ dot.classList.add('off'); setTimeout(connect, 3000); };
     ws.onerror = function(){ ws.close(); };
     ws.onmessage = function(e){
       try {
@@ -1279,10 +1169,8 @@ new Chart(document.getElementById('endpointsChart'), {
         if (data.type !== 'hit') return;
         total++;
         countEl.textContent = total + ' hits';
-
         var events = ticker.querySelectorAll('.ws-event');
         if (events.length >= MAX_EVENTS) events[events.length - 1].remove();
-
         var el = document.createElement('div');
         el.className = 'ws-event';
         var t = new Date(data.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -1297,7 +1185,6 @@ new Chart(document.getElementById('endpointsChart'), {
   connect();
 })();
 
-// ── MODALS ──────────────────────────────────────────────
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(function(el) {
@@ -1309,14 +1196,10 @@ function toggleCustomExpiry(v) {
   v === 'custom' ? c.classList.remove('hidden') : c.classList.add('hidden');
 }
 
-// ── COPY KEY ────────────────────────────────────────────
 function copyKey(text) {
-  navigator.clipboard.writeText(text).then(function() {
-    showToast('Key copied!');
-  });
+  navigator.clipboard.writeText(text).then(function() { showToast('Key copied!'); });
 }
 
-// ── DUPLICATE KEY ───────────────────────────────────────
 function duplicateKey(id) {
   fetch('/admin/duplicate-key', {
     method: 'POST',
@@ -1332,7 +1215,6 @@ function duplicateKey(id) {
   }).catch(function(){ showToast('Network error', true); });
 }
 
-// ── FILTER ──────────────────────────────────────────────
 function filterKeys() {
   var val = document.getElementById('searchInput').value.toUpperCase();
   document.getElementById('keysTable').querySelectorAll('tbody tr').forEach(function(tr) {
@@ -1340,7 +1222,6 @@ function filterKeys() {
   });
 }
 
-// ── EDIT MODAL ──────────────────────────────────────────
 function setAccessMode(scope, mode) {
   var allBox    = document.getElementById(scope === 'gen' ? 'gen-all-box'    : 'edit-all-box');
   var singleBox = document.getElementById(scope === 'gen' ? 'gen-single-box' : 'edit-single-box');
@@ -1356,15 +1237,110 @@ function setAccessMode(scope, mode) {
   container.querySelectorAll('.seg-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.mode === mode); });
 }
 
+var USAGE_HINTS = {
+  unlimited   : 'No caps at all — no daily limit, no per-minute limit, no total-request cap. Use for trusted internal keys.',
+  ratelimited : 'This key follows the daily / per-minute / total-request limits below.',
+  onetime     : 'This key works for exactly ONE request, then auto-expires and disables itself.'
+};
+function setUsageMode(scope, mode) {
+  var unlimitedInput = document.getElementById(scope + '-unlimited-input');
+  var onetimeInput   = document.getElementById(scope + '-onetime-input');
+  var rlBox          = document.getElementById(scope + '-ratelimit-box');
+  var hint           = document.getElementById(scope + '-usage-hint');
+
+  unlimitedInput.disabled = true;
+  onetimeInput.disabled = true;
+  rlBox.querySelectorAll('input').forEach(function(i){ i.disabled = true; });
+  rlBox.style.opacity = '0.4';
+  rlBox.style.pointerEvents = 'none';
+
+  if (mode === 'unlimited') {
+    unlimitedInput.disabled = false;
+  } else if (mode === 'onetime') {
+    onetimeInput.disabled = false;
+  } else {
+    rlBox.querySelectorAll('input').forEach(function(i){ i.disabled = false; });
+    rlBox.style.opacity = '1';
+    rlBox.style.pointerEvents = 'auto';
+  }
+
+  hint.textContent = USAGE_HINTS[mode];
+
+  var container = scope === 'gen' ? document.getElementById('generateModal') : document.getElementById('editModal');
+  container.querySelectorAll('.usage-seg-btn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.usage === mode);
+  });
+}
+
+function toggleOverrideRow(chk) {
+  var row     = chk.closest('.override-row');
+  var msgWrap = row.querySelector('.override-msg-wrap');
+  var state   = row.querySelector('.override-state');
+  if (chk.checked) {
+    row.classList.remove('is-off');
+    msgWrap.classList.add('hidden');
+    state.textContent = 'ON'; state.classList.remove('off'); state.classList.add('on');
+  } else {
+    row.classList.add('is-off');
+    msgWrap.classList.remove('hidden');
+    state.textContent = 'OFF'; state.classList.remove('on'); state.classList.add('off');
+  }
+  updateOverrideBadge();
+}
+
+function updateOverrideBadge() {
+  var offCount = document.querySelectorAll('#edit-override-list .override-row.is-off').length;
+  var badge = document.getElementById('overrideOffBadge');
+  badge.textContent = offCount + ' off';
+  badge.style.color = offCount > 0 ? 'var(--red)' : '';
+  badge.style.borderColor = offCount > 0 ? 'rgba(248,113,113,0.3)' : '';
+}
+
+function populateOverrides(overridesObj) {
+  document.querySelectorAll('#edit-override-list .override-row').forEach(function(row){
+    var api = row.dataset.api;
+    var chk = row.querySelector('.override-toggle');
+    var msg = row.querySelector('.override-msg');
+    var o = overridesObj[api];
+    if (o && o.enabled === false) {
+      chk.checked = false;
+      msg.value = o.message || '';
+    } else {
+      chk.checked = true;
+      msg.value = '';
+    }
+    toggleOverrideRow(chk);
+  });
+}
+
+function collectOverrides() {
+  var result = {};
+  document.querySelectorAll('#edit-override-list .override-row').forEach(function(row){
+    var api = row.dataset.api;
+    var chk = row.querySelector('.override-toggle');
+    var msg = row.querySelector('.override-msg');
+    if (!chk.checked) {
+      result[api] = { enabled: false, message: (msg.value || '').trim() || 'This API is currently turned off for this key.' };
+    }
+  });
+  return result;
+}
+
 function openEditModal(btn) {
   var d = btn.dataset;
   document.getElementById('edit_key_id').value = d.id;
   document.getElementById('edit_name').value = decodeURIComponent(d.name || '');
   document.getElementById('edit_api_enabled').value = d.enabled !== undefined ? d.enabled : 1;
-  document.getElementById('edit_unlimited_hits').value = d.unlimited === '1' ? 'true' : 'false';
   document.getElementById('edit_rate_limit_per_day').value = d.rlDay || 100;
   document.getElementById('edit_rate_limit_per_minute').value = d.rlMin || 0;
+  document.getElementById('edit_max_hits').value = d.maxhits || 0;
   document.getElementById('edit_key_note').value = decodeURIComponent(d.note || '');
+
+  var isUnlimited = d.unlimited === '1';
+  var maxHits = parseInt(d.maxhits || '0', 10);
+  var mode = isUnlimited ? 'unlimited' : (maxHits === 1 ? 'onetime' : 'ratelimited');
+  setUsageMode('edit', mode);
+
   var allowed = ['all'];
   try { allowed = JSON.parse(decodeURIComponent(d.allowed || '["all"]')); } catch(e) { allowed = ['all']; }
   if (!Array.isArray(allowed) || allowed.includes('all') || allowed.length === 0) {
@@ -1378,6 +1354,11 @@ function openEditModal(btn) {
       c.checked = allowed.indexOf(c.value) >= 0;
     });
   }
+
+  var overrides = {};
+  try { overrides = JSON.parse(decodeURIComponent(d.overrides || '{}')); } catch(e) { overrides = {}; }
+  populateOverrides(overrides);
+
   openModal('editModal');
 }
 
@@ -1393,6 +1374,8 @@ async function submitEditKey(e) {
     } else { data[key] = value; }
   });
   if (data.selected_apis && data.selected_apis.length === 1) data.selected_apis = data.selected_apis[0];
+  data.api_overrides = JSON.stringify(collectOverrides());
+
   var res = await fetch('/admin/edit-key', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
   var result = await res.json();
   if(result.success) {
@@ -1410,8 +1393,8 @@ document.getElementById('enable_custom').addEventListener('change', function() {
 });
 
 setAccessMode('gen', 'all');
+setUsageMode('gen', 'ratelimited');
 
-// ── API MANAGEMENT ──────────────────────────────────────
 function filterApis() {
   var val = document.getElementById('apiSearchInput').value.toLowerCase();
   var activeFilter = document.querySelector('.api-filter-btn.active')?.dataset.filter || 'all';
