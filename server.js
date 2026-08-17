@@ -62,7 +62,9 @@ db.serialize(() => {
         key_note              TEXT DEFAULT '',
         note_enabled          INTEGER DEFAULT 0,
         last_updated          DATETIME,
-        api_enabled           INTEGER DEFAULT 1
+        api_enabled           INTEGER DEFAULT 1,
+        max_hits              INTEGER DEFAULT 0,
+        api_overrides         TEXT DEFAULT '{}'
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS rate_limit_tracking (
@@ -123,6 +125,7 @@ db.serialize(() => {
     // Safe migrations — these silently fail if column already exists
     db.run(`ALTER TABLE available_apis ADD COLUMN custom_message TEXT DEFAULT 'API is currently turned off.'`, () => {});
     db.run(`ALTER TABLE api_keys ADD COLUMN max_hits INTEGER DEFAULT 0`, () => {});
+    db.run(`ALTER TABLE api_keys ADD COLUMN api_overrides TEXT DEFAULT '{}'`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN response_time INTEGER`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`, () => {});
 
@@ -682,6 +685,7 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
             allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
     }
 
+    // ── Usage mode precedence: unlimited > one_time (forces max_hits=1) > custom max_hits ──
     const isUnlimited = ['true','on','1'].includes(String(unlimited_hits));
     const isOneTime   = ['true','on','1'].includes(String(one_time));
     const maxHits     = isUnlimited ? 0 : (isOneTime ? 1 : (parseInt(raw_max_hits) || 0));
@@ -724,39 +728,69 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
     }
 });
 
+// ─── EDIT KEY — now supports usage mode (unlimited/rate-limited/one-time) + per-key API overrides ──
 app.post('/admin/edit-key', requireAuth, async (req, res) => {
     const {
-        key_id, name, expiry, unlimited_hits,
+        key_id, name, expiry, unlimited_hits, one_time, max_hits: raw_max_hits,
         rate_limit_per_day, rate_limit_per_minute,
-        key_note, status, selected_apis, api_enabled
+        key_note, status, selected_apis, api_enabled, api_overrides
     } = req.body;
 
     if (!key_id) return res.status(400).json({ success: false, error: 'Key ID required' });
 
-    let expires_at = null;
-    if (expiry && expiry !== 'keep' && expiry !== 'never') {
-        const now = new Date();
-        if      (expiry === '3d')  expires_at = new Date(now.getTime() + 3  * 86400000);
-        else if (expiry === '7d')  expires_at = new Date(now.getTime() + 7  * 86400000);
-        else if (expiry === '30d') expires_at = new Date(now.getTime() + 30 * 86400000);
-    }
-
-    let allowedApisJson = '["all"]';
-    if (selected_apis) {
-        if (selected_apis === 'all' || (Array.isArray(selected_apis) && selected_apis.includes('all')))
-            allowedApisJson = '["all"]';
-        else
-            allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
-    }
-
-    const isUnlimited = ['true','on','1',1].includes(unlimited_hits);
-    const enabled     = !['false','0',0].includes(api_enabled) ? 1 : 0;
-    const noteText    = (key_note || '').trim();
-    const perDay      = isUnlimited ? 0 : (parseInt(rate_limit_per_day)    >= 0 ? parseInt(rate_limit_per_day)    : 100);
-    const perMin      = isUnlimited ? 0 : (parseInt(rate_limit_per_minute) >= 0 ? parseInt(rate_limit_per_minute) : 0);
-    const expiryIso   = expires_at ? expires_at.toISOString() : null;
-
     try {
+        const existing = await dbGet('SELECT * FROM api_keys WHERE id = ?', [key_id]);
+        if (!existing) return res.status(404).json({ success: false, error: 'Key not found' });
+
+        // expiry — edit form doesn't expose this yet, so default is always "keep existing"
+        let keepExpiry = true;
+        let expires_at = null;
+        if (expiry && expiry !== 'keep' && expiry !== 'never') {
+            keepExpiry = false;
+            const now = new Date();
+            if      (expiry === '3d')  expires_at = new Date(now.getTime() + 3  * 86400000);
+            else if (expiry === '7d')  expires_at = new Date(now.getTime() + 7  * 86400000);
+            else if (expiry === '30d') expires_at = new Date(now.getTime() + 30 * 86400000);
+        } else if (expiry === 'never') {
+            keepExpiry = false;
+        }
+        const expiryIso = keepExpiry ? existing.expires_at : (expiry === 'never' ? null : (expires_at ? expires_at.toISOString() : existing.expires_at));
+
+        let allowedApisJson = '["all"]';
+        if (selected_apis) {
+            if (selected_apis === 'all' || (Array.isArray(selected_apis) && selected_apis.includes('all')))
+                allowedApisJson = '["all"]';
+            else
+                allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
+        }
+
+        // ── Usage mode precedence: unlimited > one_time (forces max_hits=1) > custom max_hits ──
+        const isUnlimited = ['true','on','1',1].includes(unlimited_hits);
+        const isOneTime   = ['true','on','1',1].includes(one_time);
+        const maxHits      = isUnlimited ? 0 : (isOneTime ? 1 : (parseInt(raw_max_hits) || 0));
+        const enabled      = !['false','0',0].includes(api_enabled) ? 1 : 0;
+        const noteText     = (key_note || '').trim();
+        const perDay       = isUnlimited ? 0 : (parseInt(rate_limit_per_day)    >= 0 ? parseInt(rate_limit_per_day)    : 100);
+        const perMin       = isUnlimited ? 0 : (parseInt(rate_limit_per_minute) >= 0 ? parseInt(rate_limit_per_minute) : 0);
+
+        // ── Per-key API overrides — validate incoming JSON, fall back to existing on parse failure ──
+        let overridesJson = existing.api_overrides || '{}';
+        if (api_overrides !== undefined) {
+            try {
+                const parsed = typeof api_overrides === 'string' ? JSON.parse(api_overrides) : api_overrides;
+                overridesJson = JSON.stringify(parsed && typeof parsed === 'object' ? parsed : {});
+            } catch(_) { overridesJson = '{}'; }
+        }
+
+        // ── Auto-reactivate: if the key was expired purely because of the hit cap, and the new
+        //    mode no longer puts it over that cap, bring it back to active automatically ──
+        let newStatus = status || existing.status;
+        if (!status && existing.status === 'expired') {
+            const stillOverCap = !isUnlimited && maxHits > 0 && existing.hits >= maxHits;
+            const dateExpired  = expiryIso ? new Date(expiryIso) < new Date() : false;
+            if (!stillOverCap && !dateExpired) newStatus = 'active';
+        }
+
         await dbRun(
             `UPDATE api_keys SET
                name = COALESCE(?,name),
@@ -767,20 +801,16 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
                rate_limit_enabled = ?,
                rate_limit_per_day = ?,
                rate_limit_per_minute = ?,
-               status = COALESCE(?,status),
+               max_hits = ?,
+               status = ?,
                api_enabled = ?,
-               expires_at = CASE
-                   WHEN ? = 'never' THEN NULL
-                   WHEN ? = 'keep'  THEN expires_at
-                   WHEN ? IS NOT NULL THEN ?
-                   ELSE expires_at
-               END,
+               api_overrides = ?,
+               expires_at = ?,
                last_updated = ?
              WHERE id = ?`,
             [name || null, allowedApisJson, noteText, noteText.length > 0 ? 1 : 0,
-             isUnlimited ? 1 : 0, isUnlimited ? 0 : 1, perDay, perMin,
-             status || null, enabled,
-             expiry, expiry, expiryIso, expiryIso,
+             isUnlimited ? 1 : 0, isUnlimited ? 0 : 1, perDay, perMin, maxHits,
+             newStatus, enabled, overridesJson, expiryIso,
              new Date().toISOString(), key_id]
         );
         res.json({ success: true, message: 'Key updated successfully' });
@@ -846,13 +876,14 @@ app.post('/admin/duplicate-key', requireAuth, async (req, res) => {
             `INSERT INTO api_keys
              (key,name,owner_username,owner_channel,expires_at,unlimited_hits,allowed_apis,
               status,is_custom,rate_limit_enabled,rate_limit_per_day,rate_limit_per_minute,
-              key_note,note_enabled,last_updated,api_enabled,max_hits)
-             VALUES (?,?,?,?,?,?,?,'active',0,?,?,?,?,?,?,1,?)`,
+              key_note,note_enabled,last_updated,api_enabled,max_hits,api_overrides)
+             VALUES (?,?,?,?,?,?,?,'active',0,?,?,?,?,?,?,1,?,?)`,
             [newKey, (src.name || 'Unnamed') + ' (copy)',
              src.owner_username, src.owner_channel, src.expires_at,
              src.unlimited_hits, src.allowed_apis,
              src.rate_limit_enabled, src.rate_limit_per_day, src.rate_limit_per_minute,
-             src.key_note, src.note_enabled, new Date().toISOString(), src.max_hits || 0]
+             src.key_note, src.note_enabled, new Date().toISOString(), src.max_hits || 0,
+             src.api_overrides || '{}']
         );
         res.json({ success: true, key: newKey });
     } catch (err) {
@@ -960,7 +991,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (!userKey)
             return res.status(401).json({ error: 'API key required', contact: OWNER });
 
-        // Check API enabled status
+        // Check global API enabled status (affects ALL keys)
         const targetApi = await dbGet(
             'SELECT * FROM available_apis WHERE name = ? OR endpoint = ?',
             [endpoint, `/api/${endpoint}`]
@@ -977,11 +1008,19 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (keyData.status !== 'active')
             return res.status(403).json({ error: `Key status is ${keyData.status}`, contact: OWNER });
 
-        // Check allowed APIs
+        // Check allowed APIs for this key
         try {
             const allowed = JSON.parse(keyData.allowed_apis || '["all"]');
             if (!allowed.includes('all') && !allowed.includes(endpoint))
                 return res.status(403).json({ success: false, error: `Endpoint "${endpoint}" not allowed for this key.` });
+        } catch(_) {}
+
+        // Check per-key API override — this specific key may have this specific API turned off
+        try {
+            const overrides = JSON.parse(keyData.api_overrides || '{}');
+            if (overrides[endpoint] && overrides[endpoint].enabled === false) {
+                return res.json({ status: false, message: overrides[endpoint].message || 'This API is currently turned off for this key.' });
+            }
         } catch(_) {}
 
         // Check expiry (date-based)
