@@ -1,19 +1,21 @@
 require('dotenv').config();
-const express  = require('express');
-const session  = require('express-session');
-const bcrypt   = require('bcrypt');
-const axios    = require('axios');
+const express   = require('express');
+const session   = require('express-session');
+const bcrypt    = require('bcrypt');
+const axios     = require('axios');
 const rateLimit = require('express-rate-limit');
-const cors     = require('cors');
-const path     = require('path');
-const sqlite3  = require('sqlite3').verbose();
-const fs       = require('fs');
+const cors      = require('cors');
+const path      = require('path');
+const sqlite3   = require('sqlite3').verbose();
+const fs        = require('fs');
+const http      = require('http');
+const { WebSocketServer } = require('ws');
 
 const app = express();
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const OWNER   = '@sahilxalone';
-const CHANNEL = '@OSINTNXERA';
+const OWNER    = '@sahilxalone';
+const CHANNEL  = '@OSINTNXERA';
 const NEW_BASE = 'https://sahilcc.dpdns.org';
 const MASTER_KEYS = {
     mistral  : 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
@@ -118,7 +120,7 @@ db.serialize(() => {
         maintenance_message TEXT DEFAULT 'API is currently under maintenance.'
     )`);
 
-    // Safe migrations
+    // Safe migrations — these silently fail if column already exists
     db.run(`ALTER TABLE available_apis ADD COLUMN custom_message TEXT DEFAULT 'API is currently turned off.'`, () => {});
     db.run(`ALTER TABLE api_keys ADD COLUMN max_hits INTEGER DEFAULT 0`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN response_time INTEGER`, () => {});
@@ -610,6 +612,22 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
     }
 });
 
+// ─── HEATMAP DATA — 8 weeks of daily hit counts ───────────────────────────────
+app.get('/admin/heatmap-data', requireAuth, async (req, res) => {
+    try {
+        const rows = await dbAll(
+            `SELECT date, SUM(calls) as total
+             FROM daily_calls
+             WHERE date >= date('now', '-56 days')
+             GROUP BY date
+             ORDER BY date`
+        );
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ─── LOGIN HISTORY ────────────────────────────────────────────────────────────
 app.get('/admin/login-history', requireAuth, async (req, res) => {
     try {
@@ -815,6 +833,34 @@ app.post('/admin/bulk-key-action', requireAuth, async (req, res) => {
     }
 });
 
+// ─── DUPLICATE KEY ────────────────────────────────────────────────────────────
+app.post('/admin/duplicate-key', requireAuth, async (req, res) => {
+    const { key_id } = req.body;
+    if (!key_id) return res.status(400).json({ success: false, error: 'key_id required' });
+    try {
+        const src = await dbGet('SELECT * FROM api_keys WHERE id = ?', [key_id]);
+        if (!src) return res.status(404).json({ success: false, error: 'Key not found' });
+
+        const newKey = 'OSINT_' + Math.random().toString(36).substring(2, 18).toUpperCase();
+        await dbRun(
+            `INSERT INTO api_keys
+             (key,name,owner_username,owner_channel,expires_at,unlimited_hits,allowed_apis,
+              status,is_custom,rate_limit_enabled,rate_limit_per_day,rate_limit_per_minute,
+              key_note,note_enabled,last_updated,api_enabled,max_hits)
+             VALUES (?,?,?,?,?,?,?,'active',0,?,?,?,?,?,?,1,?)`,
+            [newKey, (src.name || 'Unnamed') + ' (copy)',
+             src.owner_username, src.owner_channel, src.expires_at,
+             src.unlimited_hits, src.allowed_apis,
+             src.rate_limit_enabled, src.rate_limit_per_day, src.rate_limit_per_minute,
+             src.key_note, src.note_enabled, new Date().toISOString(), src.max_hits || 0]
+        );
+        res.json({ success: true, key: newKey });
+    } catch (err) {
+        console.error('Duplicate key error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // ─── API MANAGEMENT ───────────────────────────────────────────────────────────
 app.post('/admin/toggle-api', requireAuth, async (req, res) => {
     const { api_id, is_active } = { ...req.body, ...req.query };
@@ -880,7 +926,6 @@ app.post('/head-admin/delete-user', requireHeadAdmin, async (req, res) => {
 });
 
 // ─── MIGRATE ROUTE — run once then delete ────────────────────────────────────
-// GET /admin/migrate-apis — seeds any new endpoints that don't exist yet
 app.get('/admin/migrate-apis', requireAuth, async (req, res) => {
     const newApis = [
         ['tg',    '📞 TG to Number',  '/api/tg',    '{"number":""}','{"number":"9876543210"}','Telegram number lookup'],
@@ -923,7 +968,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (targetApi && targetApi.is_active === 0)
             return res.json({ status: false, message: targetApi.custom_message || 'This API is currently turned off.' });
 
-        // Validate key
+        // Validate key (case-insensitive)
         const keyData = await dbGet('SELECT * FROM api_keys WHERE UPPER(key) = UPPER(?)', [userKey]);
         if (!keyData)
             return res.status(403).json({ error: 'Invalid API key', contact: OWNER });
@@ -947,7 +992,8 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 
         // Check expiry (hit-count-based) — max_hits 0 = unlimited
         if (!keyData.unlimited_hits && keyData.max_hits > 0 && keyData.hits >= keyData.max_hits) {
-            dbRun('UPDATE api_keys SET status = "expired" WHERE id = ?', [keyData.id]).catch(() => {});
+            // auto-disable on hit-count expire
+            dbRun('UPDATE api_keys SET status = "expired", api_enabled = 0 WHERE id = ?', [keyData.id]).catch(() => {});
             return res.status(403).json({
                 success: false,
                 error  : `Key expired — request limit reached (${keyData.max_hits} calls)`,
@@ -1009,6 +1055,14 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
                ON CONFLICT(api_key,date) DO UPDATE SET calls = calls + 1`, [userKey, today]).catch(() => {});
         dbRun('UPDATE api_keys SET hits = hits + 1 WHERE id = ?', [keyData.id]).catch(() => {});
 
+        // ── WebSocket broadcast — real-time hit notification ───────────────────
+        wsBroadcast({
+            type     : 'hit',
+            endpoint : endpoint,
+            key      : userKey.slice(0, 8) + '…',
+            ts       : Date.now()
+        });
+
         const proxyFn = apiProxyMap[endpoint];
         if (!proxyFn)
             return res.status(404).json({ error: 'Unknown endpoint', contact: OWNER });
@@ -1063,7 +1117,25 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
-// ─── START ────────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`\n🚀 OSINT API HUB — PORT ${PORT}`));
+// ─── HTTP SERVER + WEBSOCKET ──────────────────────────────────────────────────
+const PORT   = process.env.PORT || 3000;
+const server = http.createServer(app);
+const wss    = new WebSocketServer({ server, path: '/ws/hits' });
+
+// broadcast to all connected WS clients
+function wsBroadcast(payload) {
+    const msg = JSON.stringify(payload);
+    wss.clients.forEach(client => {
+        if (client.readyState === 1) client.send(msg);
+    });
+}
+
+// keep-alive ping every 25s — stops proxies from dropping idle connections
+setInterval(() => {
+    wss.clients.forEach(client => {
+        if (client.readyState === 1) client.ping();
+    });
+}, 25000);
+
+server.listen(PORT, () => console.log(`\n🚀 OSINT API HUB — PORT ${PORT}`));
 module.exports = app;
