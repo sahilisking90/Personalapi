@@ -13,7 +13,6 @@ const { WebSocketServer } = require('ws');
 
 const app = express();
 
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const OWNER    = '@sahilxalone';
 const CHANNEL  = '@OSINTNXERA';
 const NEW_BASE = 'https://sahilcc.dpdns.org';
@@ -22,7 +21,6 @@ const MASTER_KEYS = {
     ayaanmods: 'ayaan-key'
 };
 
-// ─── DATABASE SETUP ───────────────────────────────────────────────────────────
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
@@ -32,7 +30,6 @@ const dbGet = (sql, p = []) => new Promise((ok, fail) => db.get(sql, p, (e, r) =
 const dbAll = (sql, p = []) => new Promise((ok, fail) => db.all(sql, p, (e, r) => e ? fail(e) : ok(r)));
 const dbRun = (sql, p = []) => new Promise((ok, fail) => db.run(sql, p, function(e) { e ? fail(e) : ok(this); }));
 
-// ─── DB INIT ──────────────────────────────────────────────────────────────────
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,14 +119,14 @@ db.serialize(() => {
         maintenance_message TEXT DEFAULT 'API is currently under maintenance.'
     )`);
 
-    // Safe migrations — these silently fail if column already exists
+    // safe migrations
     db.run(`ALTER TABLE available_apis ADD COLUMN custom_message TEXT DEFAULT 'API is currently turned off.'`, () => {});
+    db.run(`ALTER TABLE available_apis ADD COLUMN expires_at DATETIME`, () => {});
     db.run(`ALTER TABLE api_keys ADD COLUMN max_hits INTEGER DEFAULT 0`, () => {});
     db.run(`ALTER TABLE api_keys ADD COLUMN api_overrides TEXT DEFAULT '{}'`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN response_time INTEGER`, () => {});
     db.run(`ALTER TABLE analytics ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`, () => {});
 
-    // Seed defaults
     db.get(`SELECT id FROM settings WHERE id = 1`, [], (e, r) => {
         if (!r) db.run(`INSERT INTO settings (id, maintenance_message) VALUES (1, 'API is currently under maintenance.')`);
     });
@@ -145,7 +142,6 @@ db.serialize(() => {
     db.get(`SELECT COUNT(*) as c FROM available_apis`, [], (e, r) => {
         if (r && r.c === 0) {
             const APIs = [
-                // ── Phone / Number ────────────────────────────────────────────
                 ['tg',           '📞 TG to Number',       '/api/tg',           '{"number":""}',  '{"number":"9876543210"}',   'Telegram number lookup'],
                 ['num',          '📱 Number Info',         '/api/num',          '{"number":""}',  '{"number":"9876543210"}',   'Complete number information'],
                 ['num2',         '🔍 Number Info v2',      '/api/num2',         '{"number":""}',  '{"number":"9876543210"}',   'Advanced number information'],
@@ -153,22 +149,18 @@ db.serialize(() => {
                 ['num-pak',      '🇵🇰 Pakistani Number',    '/api/num-pak',      '{"number":""}',  '{"number":"03001234567"}',  'Pakistani mobile number'],
                 ['chain',        '🔗 Chain Lookup',        '/api/chain',        '{"number":""}',  '{"number":"9876543210"}',   'Chained number info'],
                 ['bom',          '💥 BOM Lookup',          '/api/bom',          '{"number":""}',  '{"number":"9876543210"}',   'BOM number lookup'],
-                // ── Identity ──────────────────────────────────────────────────
                 ['aadhr',        '🪪 Aadhaar Info',        '/api/aadhr',        '{"q":""}',       '{"q":"123456789012"}',      'Aadhaar information lookup'],
                 ['pan',          '📄 PAN Card',            '/api/pan',          '{"pan":""}',     '{"pan":"ABCDE1234F"}',      'PAN card details'],
                 ['family',       '👨‍👩‍👧‍👦 Family Tree',        '/api/family',       '{"term":""}',    '{"term":"123456789012"}',   'Family relationship lookup'],
                 ['email-info',   '📧 Email Info',          '/api/email-info',   '{"q":""}',       '{"q":"test@example.com"}',  'Email address information'],
-                // ── Vehicle ───────────────────────────────────────────────────
                 ['veh-to-num',   '🚗 Vehicle to Number',   '/api/veh-to-num',   '{"term":""}',    '{"term":"DL01AB1234"}',     'Vehicle registration to owner number'],
                 ['vehicle-info', '🚘 Vehicle Info',         '/api/vehicle-info', '{"vehicle":""}', '{"vehicle":"DL01AB1234"}',  'Vehicle challan/info'],
                 ['rc',           '📋 RC Details',          '/api/rc',           '{"owner":""}',   '{"owner":"DL01AB1234"}',    'Registration certificate details'],
-                // ── Social / Gaming ───────────────────────────────────────────
                 ['insta',        '📸 Instagram Info',      '/api/insta',        '{"username":""}','{"username":"instagram"}',  'Instagram profile'],
                 ['snap',         '👻 Snapchat Info',       '/api/snap',         '{"username":""}','{"username":"john_doe"}',   'Snapchat profile lookup'],
                 ['git',          '🐙 GitHub User',         '/api/git',          '{"username":""}','{"username":"octocat"}',    'GitHub profile info'],
                 ['bgmi',         '🎮 BGMI Player',         '/api/bgmi',         '{"uid":""}',     '{"uid":"5121439477"}',      'BGMI player stats'],
                 ['ff',           '🔫 FreeFire ID',         '/api/ff',           '{"uid":""}',     '{"uid":"123456789"}',       'FreeFire player info'],
-                // ── Tech / Other ──────────────────────────────────────────────
                 ['ip',           '🌐 IP Geolocation',      '/api/ip',           '{"ip":""}',      '{"ip":"8.8.8.8"}',          'IP address location'],
                 ['bank',         '🏦 Bank IFSC',           '/api/bank',         '{"ifsc":""}',    '{"ifsc":"SBIN0001234"}',    'Bank branch details'],
                 ['pincode',      '📍 Pincode Info',        '/api/pincode',      '{"pin":""}',     '{"pin":"110001"}',          'Area details from pincode'],
@@ -186,7 +178,6 @@ db.serialize(() => {
     });
 });
 
-// ─── EXPRESS SETUP ────────────────────────────────────────────────────────────
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
@@ -207,7 +198,6 @@ const globalLimiter = rateLimit({
     handler: (req, res) => res.json({ error: 'Global rate limit exceeded', contact: OWNER })
 });
 
-// ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 const requireAuth = (req, res, next) => {
     if (!req.session.user) return res.redirect('/login');
     next();
@@ -218,7 +208,6 @@ const requireHeadAdmin = (req, res, next) => {
     next();
 };
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
 const getParam = (p, ...keys) => {
     for (const k of keys)
         if (p[k] !== undefined && p[k] !== null && p[k] !== '') return encodeURIComponent(p[k]);
@@ -236,49 +225,36 @@ const formatApis = (apis) => apis.map(api => {
     return { ...api, param_name: Object.keys(params)[0] || 'param' };
 });
 
-// ─── API PROXY MAP ────────────────────────────────────────────────────────────
 const apiProxyMap = {
-    // ── Phone / Number ────────────────────────────────────────────────────────
     'tg':           p => `${NEW_BASE}/api/tg?number=${getParam(p,'number','term','id','username','num','query','q')}`,
     'num':          p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
     'num2':         p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
     'num-india':    p => `${NEW_BASE}/api/num-india?number=${getParam(p,'num','number','q','query')}`,
     'num-pak':      p => `${NEW_BASE}/api/num-pak?number=${getParam(p,'number','num','q','query')}`,
-    'chain':        p => `${NEW_BASE}/api/leak?number=${getParam(p,'number','query','q','num','term')}`,
+    'chain':        p => `${NEW_BASE}/api/chain?number=${getParam(p,'number','query','q','num','term')}`,
     'bom':          p => `${NEW_BASE}/api/bom?number=${getParam(p,'number','num','q','query','term')}`,
-    // aliases kept for backward compat
     'telegram-num': p => `${NEW_BASE}/api/tg?number=${getParam(p,'term','id','username','num','query','q')}`,
     'number-info':  p => `${NEW_BASE}/api/num?number=${getParam(p,'q','number','num','query','term')}`,
     'num-newinfo':  p => `${NEW_BASE}/api/num2?number=${getParam(p,'q','number','num','query','term')}`,
-
-    // ── Identity ──────────────────────────────────────────────────────────────
     'aadhr':        p => `${NEW_BASE}/api/adhar?adhar=${getParam(p,'q','adhar','term','id','query','number')}`,
     'pan':          p => `${NEW_BASE}/api/pan?pan=${getParam(p,'pan','q','query')}`,
     'family':       p => `${NEW_BASE}/api/family?adhar=${getParam(p,'term','adhar','q','query','number')}`,
     'email-info':   p => `${NEW_BASE}/api/email?email=${getParam(p,'q','email','query')}`,
-
-    // ── Vehicle ───────────────────────────────────────────────────────────────
     'veh-to-num':   p => `${NEW_BASE}/api/veh-info?registration_number=${getParam(p,'vehicle','term','q','query')}`,
     'vehicle-info': p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','registration_number','q','term','query')}`,
     'vehicle':      p => `${NEW_BASE}/api/veh?vehicle=${getParam(p,'vehicle','q','term','query')}`,
     'rc':           p => `${NEW_BASE}/api/rc?registration_number=${getParam(p,'owner','vehicle','q','query')}`,
-
-    // ── Social / Gaming ───────────────────────────────────────────────────────
     'insta':        p => `${NEW_BASE}/api/insta?username=${getParam(p,'username','q','query')}`,
     'snap':         p => `${NEW_BASE}/api/snap?username=${getParam(p,'username','q','query')}`,
     'git':          p => `${NEW_BASE}/api/git?username=${getParam(p,'username','q','query')}`,
     'bgmi':         p => `${NEW_BASE}/api/bgmi?uid=${getParam(p,'uid','q','query')}`,
     'ff':           p => `${NEW_BASE}/api/ff?uid=${getParam(p,'uid','q','query')}`,
-
-    // ── Tech / Other ──────────────────────────────────────────────────────────
     'ip':           p => `${NEW_BASE}/api/ip?ip=${getParam(p,'ip','q','query')}`,
     'bank':         p => `${NEW_BASE}/api/ifsc?ifsc=${getParam(p,'ifsc','q','query')}`,
     'pincode':      p => `${NEW_BASE}/api/pin?pincode=${getParam(p,'pin','pincode','q','query')}`,
-    'leakpro':         p => `${NEW_BASE}/api/leakpro?query=${getParam(p,'number','query','q','num','term')}`,
-    'leakpro':      p => `${NEW_BASE}/api/leakpro?query=${getParam(p,'number','query','q','num','quiry','term')}`,
+    'leak':         p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','term')}`,
+    'leakpro':      p => `${NEW_BASE}/api/leak?query=${getParam(p,'number','query','q','num','quiry','term')}`,
     'ai-image':     p => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${getParam(p,'prompt','q','query')}`,
-
-    // ── Mistral — handles its own response ────────────────────────────────────
     'mistral': async (p, res, keyData, rateLimitInfo) => {
         const message = decodeURIComponent(getParam(p, 'message', 'q', 'query', 'prompt'));
         if (!message) return res.status(400).json({ error: 'message param required', contact: OWNER });
@@ -297,7 +273,6 @@ const apiProxyMap = {
     }
 };
 
-// ─── RESPONSE CLEANER ─────────────────────────────────────────────────────────
 const REMOVE_FIELDS = new Set([
     'owner','OWNER','channel','CHANNEL','telegram','contact','instagram','twitter',
     'fb','facebook','website','github','created_by','createdBy','owner_username',
@@ -326,7 +301,6 @@ function cleanResponse(data) {
     return obj;
 }
 
-// ─── PUBLIC ROUTES ────────────────────────────────────────────────────────────
 app.get('/', async (req, res) => {
     try {
         const [keys, apis] = await Promise.all([
@@ -390,7 +364,6 @@ app.get('/docs', async (req, res) => {
     }
 });
 
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
 app.get('/login', (req, res) => res.render('login', { error: req.query.error || null }));
 
 app.post('/login', async (req, res) => {
@@ -427,7 +400,6 @@ app.post('/login', async (req, res) => {
 
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 
-// ─── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
 app.get('/admin/dashboard', requireAuth, async (req, res) => {
     try {
         const [keys, apis, settings, chartRows, dailyVolume, topEndpoints, recentActivity, reqStats] = await Promise.all([
@@ -483,7 +455,6 @@ app.get('/admin/dashboard', requireAuth, async (req, res) => {
     }
 });
 
-// ─── HEAD ADMIN DASHBOARD ─────────────────────────────────────────────────────
 app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
     try {
         const [keys, users, apis, settings, chartRows] = await Promise.all([
@@ -511,7 +482,6 @@ app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
     }
 });
 
-// ─── ANALYTICS PAGE ───────────────────────────────────────────────────────────
 app.get('/admin/analytics', requireAuth, async (req, res) => {
     try {
         const epCount = await dbGet('SELECT COUNT(*) as c FROM available_apis');
@@ -527,7 +497,6 @@ app.get('/admin/analytics', requireAuth, async (req, res) => {
     }
 });
 
-// ─── ANALYTICS DATA ───────────────────────────────────────────────────────────
 app.get('/analytics/data', requireAuth, async (req, res) => {
     try {
         const [
@@ -615,7 +584,6 @@ app.get('/analytics/data', requireAuth, async (req, res) => {
     }
 });
 
-// ─── HEATMAP DATA — 8 weeks of daily hit counts ───────────────────────────────
 app.get('/admin/heatmap-data', requireAuth, async (req, res) => {
     try {
         const rows = await dbAll(
@@ -631,7 +599,6 @@ app.get('/admin/heatmap-data', requireAuth, async (req, res) => {
     }
 });
 
-// ─── LOGIN HISTORY ────────────────────────────────────────────────────────────
 app.get('/admin/login-history', requireAuth, async (req, res) => {
     try {
         const [logs, topFailedIPs] = await Promise.all([
@@ -654,13 +621,13 @@ app.get('/admin/login-history', requireAuth, async (req, res) => {
     }
 });
 
-// ─── KEY MANAGEMENT ───────────────────────────────────────────────────────────
+// ─── KEY MANAGEMENT — usage_mode driven: unlimited | ratelimited | onetime ────
 app.post('/admin/generate-key', requireAuth, async (req, res) => {
     const {
-        name, expiry, unlimited_hits, selected_apis, custom_key,
+        name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
+        selected_apis, custom_key,
         rate_limit_per_day, rate_limit_per_minute, key_note,
-        custom_expiry_date, custom_expiry_time,
-        max_hits: raw_max_hits, one_time
+        custom_expiry_date, custom_expiry_time
     } = req.body;
     const isCustomEnabled = req.body.enable_custom === 'on';
 
@@ -685,13 +652,23 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
             allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
     }
 
-    // ── Usage mode precedence: unlimited > one_time (forces max_hits=1) > custom max_hits ──
-    const isUnlimited = ['true','on','1'].includes(String(unlimited_hits));
-    const isOneTime   = ['true','on','1'].includes(String(one_time));
-    const maxHits     = isUnlimited ? 0 : (isOneTime ? 1 : (parseInt(raw_max_hits) || 0));
-    const noteText    = (key_note || '').trim();
-    const perDay      = isUnlimited ? 0 : (parseInt(rate_limit_per_day)    || 100);
-    const perMin      = isUnlimited ? 0 : (parseInt(rate_limit_per_minute) || 0);
+    // ── Usage mode: three clean choices, no overlap ──
+    const mode = ['unlimited','ratelimited','onetime'].includes(usage_mode) ? usage_mode : 'ratelimited';
+    let isUnlimited, rateLimitEnabled, perDay, perMin, maxHits;
+    if (mode === 'unlimited') {
+        isUnlimited = true; rateLimitEnabled = false; perDay = 0; perMin = 0; maxHits = 0;
+    } else if (mode === 'onetime') {
+        // fixed total-request cap, admin-settable (e.g. 5000), no recurring daily/minute limits
+        isUnlimited = false; rateLimitEnabled = false; perDay = 0; perMin = 0;
+        maxHits = Math.max(1, parseInt(one_time_limit) || 1);
+    } else {
+        isUnlimited = false; rateLimitEnabled = true;
+        perDay  = Math.max(0, parseInt(rate_limit_per_day)    || 100);
+        perMin  = Math.max(0, parseInt(rate_limit_per_minute) || 0);
+        maxHits = Math.max(0, parseInt(raw_max_hits) || 0);
+    }
+
+    const noteText = (key_note || '').trim();
 
     const insert = async (apiKey, isCustom) => {
         await dbRun(
@@ -704,7 +681,7 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
              expires_at ? expires_at.toISOString() : null,
              isUnlimited ? 1 : 0, allowedApisJson,
              isCustom ? 1 : 0,
-             isUnlimited ? 0 : 1, perDay, perMin,
+             rateLimitEnabled ? 1 : 0, perDay, perMin,
              noteText, noteText.length > 0 ? 1 : 0,
              new Date().toISOString(), maxHits]
         );
@@ -728,10 +705,9 @@ app.post('/admin/generate-key', requireAuth, async (req, res) => {
     }
 });
 
-// ─── EDIT KEY — now supports usage mode (unlimited/rate-limited/one-time) + per-key API overrides ──
 app.post('/admin/edit-key', requireAuth, async (req, res) => {
     const {
-        key_id, name, expiry, unlimited_hits, one_time, max_hits: raw_max_hits,
+        key_id, name, expiry, usage_mode, one_time_limit, max_hits: raw_max_hits,
         rate_limit_per_day, rate_limit_per_minute,
         key_note, status, selected_apis, api_enabled, api_overrides
     } = req.body;
@@ -742,7 +718,6 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
         const existing = await dbGet('SELECT * FROM api_keys WHERE id = ?', [key_id]);
         if (!existing) return res.status(404).json({ success: false, error: 'Key not found' });
 
-        // expiry — edit form doesn't expose this yet, so default is always "keep existing"
         let keepExpiry = true;
         let expires_at = null;
         if (expiry && expiry !== 'keep' && expiry !== 'never') {
@@ -764,16 +739,27 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
                 allowedApisJson = JSON.stringify(Array.isArray(selected_apis) ? selected_apis : [selected_apis]);
         }
 
-        // ── Usage mode precedence: unlimited > one_time (forces max_hits=1) > custom max_hits ──
-        const isUnlimited = ['true','on','1',1].includes(unlimited_hits);
-        const isOneTime   = ['true','on','1',1].includes(one_time);
-        const maxHits      = isUnlimited ? 0 : (isOneTime ? 1 : (parseInt(raw_max_hits) || 0));
-        const enabled      = !['false','0',0].includes(api_enabled) ? 1 : 0;
-        const noteText     = (key_note || '').trim();
-        const perDay       = isUnlimited ? 0 : (parseInt(rate_limit_per_day)    >= 0 ? parseInt(rate_limit_per_day)    : 100);
-        const perMin       = isUnlimited ? 0 : (parseInt(rate_limit_per_minute) >= 0 ? parseInt(rate_limit_per_minute) : 0);
+        // ── Usage mode: derive from posted value, fall back to existing row's real state ──
+        const mode = ['unlimited','ratelimited','onetime'].includes(usage_mode)
+            ? usage_mode
+            : (existing.unlimited_hits ? 'unlimited' : (existing.rate_limit_enabled ? 'ratelimited' : 'onetime'));
 
-        // ── Per-key API overrides — validate incoming JSON, fall back to existing on parse failure ──
+        let isUnlimited, rateLimitEnabled, perDay, perMin, maxHits;
+        if (mode === 'unlimited') {
+            isUnlimited = true; rateLimitEnabled = false; perDay = 0; perMin = 0; maxHits = 0;
+        } else if (mode === 'onetime') {
+            isUnlimited = false; rateLimitEnabled = false; perDay = 0; perMin = 0;
+            maxHits = Math.max(1, parseInt(one_time_limit) || parseInt(raw_max_hits) || 1);
+        } else {
+            isUnlimited = false; rateLimitEnabled = true;
+            perDay  = parseInt(rate_limit_per_day)    >= 0 ? parseInt(rate_limit_per_day)    : 100;
+            perMin  = parseInt(rate_limit_per_minute) >= 0 ? parseInt(rate_limit_per_minute) : 0;
+            maxHits = Math.max(0, parseInt(raw_max_hits) || 0);
+        }
+
+        const enabled  = !['false','0',0].includes(api_enabled) ? 1 : 0;
+        const noteText = (key_note || '').trim();
+
         let overridesJson = existing.api_overrides || '{}';
         if (api_overrides !== undefined) {
             try {
@@ -782,8 +768,7 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
             } catch(_) { overridesJson = '{}'; }
         }
 
-        // ── Auto-reactivate: if the key was expired purely because of the hit cap, and the new
-        //    mode no longer puts it over that cap, bring it back to active automatically ──
+        // ── auto-reactivate if the key was only expired because of the old hit cap ──
         let newStatus = status || existing.status;
         if (!status && existing.status === 'expired') {
             const stillOverCap = !isUnlimited && maxHits > 0 && existing.hits >= maxHits;
@@ -809,7 +794,7 @@ app.post('/admin/edit-key', requireAuth, async (req, res) => {
                last_updated = ?
              WHERE id = ?`,
             [name || null, allowedApisJson, noteText, noteText.length > 0 ? 1 : 0,
-             isUnlimited ? 1 : 0, isUnlimited ? 0 : 1, perDay, perMin, maxHits,
+             isUnlimited ? 1 : 0, rateLimitEnabled ? 1 : 0, perDay, perMin, maxHits,
              newStatus, enabled, overridesJson, expiryIso,
              new Date().toISOString(), key_id]
         );
@@ -863,7 +848,6 @@ app.post('/admin/bulk-key-action', requireAuth, async (req, res) => {
     }
 });
 
-// ─── DUPLICATE KEY ────────────────────────────────────────────────────────────
 app.post('/admin/duplicate-key', requireAuth, async (req, res) => {
     const { key_id } = req.body;
     if (!key_id) return res.status(400).json({ success: false, error: 'key_id required' });
@@ -892,7 +876,7 @@ app.post('/admin/duplicate-key', requireAuth, async (req, res) => {
     }
 });
 
-// ─── API MANAGEMENT ───────────────────────────────────────────────────────────
+// ─── GLOBAL API MANAGEMENT ─────────────────────────────────────────────────
 app.post('/admin/toggle-api', requireAuth, async (req, res) => {
     const { api_id, is_active } = { ...req.body, ...req.query };
     if (!api_id) return res.status(400).json({ error: 'API ID required' });
@@ -910,6 +894,23 @@ app.post('/admin/update-api-status', requireAuth, async (req, res) => {
             [is_active ? 1 : 0, custom_message || 'API is currently turned off.', api_id]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── SET / CLEAR an API's auto-expiry — once it passes, the API turns off by itself ──
+app.post('/admin/update-api-expiry', requireAuth, async (req, res) => {
+    const { api_id, expires_at } = req.body;
+    if (!api_id) return res.status(400).json({ error: 'API ID required' });
+    try {
+        const iso = expires_at ? new Date(expires_at).toISOString() : null;
+        await dbRun('UPDATE available_apis SET expires_at = ? WHERE id = ?', [iso, api_id]);
+        // if they set a time already in the past, flip it off immediately for instant feedback
+        if (iso && new Date(iso) < new Date()) {
+            await dbRun('UPDATE available_apis SET is_active = 0 WHERE id = ?', [api_id]);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.post('/admin/update-api-name', requireAuth, async (req, res) => {
@@ -930,7 +931,6 @@ app.post('/admin/update-settings', requireAuth, async (req, res) => {
     } catch (err) { res.status(500).send('Database error: ' + err.message); }
 });
 
-// ─── HEAD ADMIN: USER MANAGEMENT ─────────────────────────────────────────────
 app.post('/head-admin/create-user', requireHeadAdmin, async (req, res) => {
     const { username, password, role } = req.body;
     if (!username || !password || !role)
@@ -956,30 +956,6 @@ app.post('/head-admin/delete-user', requireHeadAdmin, async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 });
 
-// ─── MIGRATE ROUTE — run once then delete ────────────────────────────────────
-app.get('/admin/migrate-apis', requireAuth, async (req, res) => {
-    const newApis = [
-        ['tg',    '📞 TG to Number',  '/api/tg',    '{"number":""}','{"number":"9876543210"}','Telegram number lookup'],
-        ['num2',  '🔍 Number Info v2','/api/num2',  '{"number":""}','{"number":"9876543210"}','Advanced number information'],
-        ['bom',   '💥 BOM Lookup',    '/api/bom',   '{"number":""}','{"number":"9876543210"}','BOM number lookup'],
-        ['snap',  '👻 Snapchat Info', '/api/snap',  '{"username":""}','{"username":"john_doe"}','Snapchat profile lookup'],
-        ['chain', '🔗 Chain Lookup',  '/api/chain', '{"number":""}','{"number":"9876543210"}','Chained number info'],
-    ];
-    try {
-        for (const row of newApis) {
-            await dbRun(
-                `INSERT OR IGNORE INTO available_apis
-                 (name,display_name,endpoint,required_params,example_params,description,is_active,custom_message)
-                 VALUES (?,?,?,?,?,?,1,'API is currently turned off.')`,
-                row
-            );
-        }
-        res.json({ success: true, message: 'Migration complete. Remove this route.' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // ─── MAIN API ENDPOINT ────────────────────────────────────────────────────────
 app.all('/api/:endpoint', globalLimiter, async (req, res) => {
     const userKey  = req.query.key || req.body.key;
@@ -991,15 +967,24 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (!userKey)
             return res.status(401).json({ error: 'API key required', contact: OWNER });
 
-        // Check global API enabled status (affects ALL keys)
+        // Global API status — including auto-expiry check (lazy self-heal if the sweep hasn't run yet)
         const targetApi = await dbGet(
             'SELECT * FROM available_apis WHERE name = ? OR endpoint = ?',
             [endpoint, `/api/${endpoint}`]
         );
-        if (targetApi && targetApi.is_active === 0)
-            return res.json({ status: false, message: targetApi.custom_message || 'This API is currently turned off.' });
+        if (targetApi) {
+            const apiExpired = targetApi.expires_at && new Date(targetApi.expires_at) < new Date();
+            if (targetApi.is_active === 0 || apiExpired) {
+                if (apiExpired && targetApi.is_active === 1) {
+                    dbRun('UPDATE available_apis SET is_active = 0 WHERE id = ?', [targetApi.id]).catch(() => {});
+                }
+                return res.json({
+                    status: false,
+                    message: targetApi.custom_message || (apiExpired ? 'This API has expired.' : 'This API is currently turned off.')
+                });
+            }
+        }
 
-        // Validate key (case-insensitive)
         const keyData = await dbGet('SELECT * FROM api_keys WHERE UPPER(key) = UPPER(?)', [userKey]);
         if (!keyData)
             return res.status(403).json({ error: 'Invalid API key', contact: OWNER });
@@ -1008,14 +993,13 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
         if (keyData.status !== 'active')
             return res.status(403).json({ error: `Key status is ${keyData.status}`, contact: OWNER });
 
-        // Check allowed APIs for this key
         try {
             const allowed = JSON.parse(keyData.allowed_apis || '["all"]');
             if (!allowed.includes('all') && !allowed.includes(endpoint))
                 return res.status(403).json({ success: false, error: `Endpoint "${endpoint}" not allowed for this key.` });
         } catch(_) {}
 
-        // Check per-key API override — this specific key may have this specific API turned off
+        // Per-key API override — this specific key may have this specific API turned off
         try {
             const overrides = JSON.parse(keyData.api_overrides || '{}');
             if (overrides[endpoint] && overrides[endpoint].enabled === false) {
@@ -1023,15 +1007,12 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             }
         } catch(_) {}
 
-        // Check expiry (date-based)
         if (keyData.expires_at && new Date(keyData.expires_at) < new Date()) {
             dbRun('UPDATE api_keys SET status = "expired" WHERE id = ?', [keyData.id]).catch(() => {});
             return res.status(403).json({ error: 'Key expired', contact: OWNER });
         }
 
-        // Check expiry (hit-count-based) — max_hits 0 = unlimited
         if (!keyData.unlimited_hits && keyData.max_hits > 0 && keyData.hits >= keyData.max_hits) {
-            // auto-disable on hit-count expire
             dbRun('UPDATE api_keys SET status = "expired", api_enabled = 0 WHERE id = ?', [keyData.id]).catch(() => {});
             return res.status(403).json({
                 success: false,
@@ -1042,7 +1023,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             });
         }
 
-        // ── Rate limiting ──────────────────────────────────────────────────────
         let rateLimitInfo = {};
         if (!keyData.unlimited_hits && keyData.rate_limit_enabled) {
             const perDay = parseInt(keyData.rate_limit_per_day)   || 100;
@@ -1089,12 +1069,10 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
                 rateLimitInfo.per_minute = { limit: perMin, used: minCount + 1, remaining: Math.max(0, perMin - minCount - 1) };
         }
 
-        // Track hits
         dbRun(`INSERT INTO daily_calls (api_key,date,calls) VALUES (?,?,1)
                ON CONFLICT(api_key,date) DO UPDATE SET calls = calls + 1`, [userKey, today]).catch(() => {});
         dbRun('UPDATE api_keys SET hits = hits + 1 WHERE id = ?', [keyData.id]).catch(() => {});
 
-        // ── WebSocket broadcast — real-time hit notification ───────────────────
         wsBroadcast({
             type     : 'hit',
             endpoint : endpoint,
@@ -1108,7 +1086,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 
         const params = { ...req.query, ...req.body };
 
-        // Mistral — handles its own response
         if (endpoint === 'mistral') {
             try { await proxyFn(params, res, keyData, rateLimitInfo); }
             catch (err) {
@@ -1118,7 +1095,6 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
             return;
         }
 
-        // Standard proxy
         try {
             const targetUrl  = proxyFn(params);
             const upstream   = await axios.get(targetUrl, { timeout: 30000 });
@@ -1147,21 +1123,29 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
     }
 });
 
-// ─── HEALTH ───────────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
-// ─── ERROR HANDLER ────────────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
     console.error('Unhandled:', err);
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
-// ─── HTTP SERVER + WEBSOCKET ──────────────────────────────────────────────────
+// ─── AUTO-EXPIRE SWEEP — flips any API whose time has passed to off, every 60s ──
+async function autoExpireApis() {
+    try {
+        await dbRun(`UPDATE available_apis SET is_active = 0
+                     WHERE expires_at IS NOT NULL AND expires_at <= datetime('now') AND is_active = 1`);
+    } catch (err) {
+        console.error('Auto-expire APIs error:', err);
+    }
+}
+autoExpireApis();
+setInterval(autoExpireApis, 60 * 1000);
+
 const PORT   = process.env.PORT || 3000;
 const server = http.createServer(app);
 const wss    = new WebSocketServer({ server, path: '/ws/hits' });
 
-// broadcast to all connected WS clients
 function wsBroadcast(payload) {
     const msg = JSON.stringify(payload);
     wss.clients.forEach(client => {
@@ -1169,7 +1153,6 @@ function wsBroadcast(payload) {
     });
 }
 
-// keep-alive ping every 25s — stops proxies from dropping idle connections
 setInterval(() => {
     wss.clients.forEach(client => {
         if (client.readyState === 1) client.ping();
